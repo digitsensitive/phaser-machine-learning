@@ -1,0 +1,33 @@
+{
+  "name": "atari-pong",
+  "version": "0.0.1",
+  "description": "Remake of the original Atari Pong Game with Reinforcement Learning. ",
+  "keywords": [
+    "Atari",
+    "Pong",
+    "Reinforcement Learning",
+    "Phaser",
+    "TypeScript"
+  ],
+  "bugs": {
+    "email": "digit.sensitivee@gmail.com"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Eric Kuhn",
+    "email": "digit.sensitivee@gmail.com"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "expose-loader": "^0.7.3",
+    "ts-loader": "^2.0.3",
+    "typescript": "^2.3.2",
+    "webpack": "^2.4.1",
+    "webpack-dev-server": "^2.4.5"
+  },
+  "dependencies": {
+    "phaser": "^2.6.2"
+  }
+}
