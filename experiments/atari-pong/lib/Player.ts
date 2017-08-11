@@ -19,9 +19,9 @@ export class Player extends Phaser.Sprite {
 
   public getTypePlayer(): number { return this.typePlayer; }
   public getPos(): Phaser.Point { return this.position; }
-  public setPos(_pos: Phaser.Point){ this.position = _pos; }
-  public setMoveUp(_mu: boolean) { this.computerMoveUp = _mu; }
-  public setMoveDown(_md: boolean) { this.computerMoveDown = _md; }
+  public setPos(_pos: Phaser.Point): void{ this.position = _pos; }
+  public setMoveUp(_mu: boolean): void { this.computerMoveUp = _mu; }
+  public setMoveDown(_md: boolean): void { this.computerMoveDown = _md; }
 
   constructor(game: Phaser.Game, x: number, y: number, type: number) {
     super(game, x, y);
@@ -77,12 +77,16 @@ export class Player extends Phaser.Sprite {
       else { this.body.velocity.y = 0; }
     }
 
+    /* update the body rectangle position */
     this.bodyRectangle = new Phaser.Rectangle(this.body.position.x, this.body.position.y, 8, 30);
 
   }
 
   render(): void {
+
+    /* render the rectangle */
     this.game.debug.geom(this.bodyRectangle,'#ffffff');
+
   }
 
 

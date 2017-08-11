@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 9);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -136,82 +136,113 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var Player_1 = __webpack_require__(11);
+var Ball_1 = __webpack_require__(9);
 var GameState = (function (_super) {
     __extends(GameState, _super);
     function GameState() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        /* ui */
+        _this.scores = [];
+        _this.scoreTexts = [];
+        _this.p1 = 9;
+        _this.p2 = 10;
+        return _this;
     }
-    /*
-     * FIRST FUNCTION CALLED WHEN THE STATE STARTS UP
-     * ROUTE THE GAME AWAY TO ANOTHER STATE IF NECESSARY, PREPARE VARIABLES OR OBJECTS
-     */
     GameState.prototype.init = function () {
-        this.m_phaserSprite = undefined;
+        /* init game objects */
+        this.paddleOne = undefined;
+        this.paddleTwo = undefined;
+        this.ball = undefined;
+        /* ui */
+        this.scores = [0, 0];
+        this.scoreTexts = [];
+        this.scoreTexts.push(this.game.add.text(200, 30, "" + this.scores[0], { font: "28px Finger Paint", fill: "#fff" }));
+        this.scoreTexts.push(this.game.add.text(580, 30, "" + this.scores[1], { font: "28px Finger Paint", fill: "#fff" }));
+        /* create and init our center line */
+        this.centerLine = this.game.add.graphics(0, 0);
+        /* set the characteristics of the line */
+        this.centerLine.lineStyle(4, 0xffffff, 0.6);
+        this.centerLine.moveTo(this.world.centerX, 0); //moving position of graphic if you draw mulitple lines
+        this.centerLine.lineTo(this.world.centerX, this.world.height);
+        this.centerLine.endFill();
     };
-    /*
-     * IS CALLED AFTER INIT()
-     * USE THIS TO LOAD YOUR GAME ASSETS. DON'T CREATE OBJECTS HERE IF THEY REQUIRE ASSETS
-     */
-    GameState.prototype.preload = function () {
-        this.game.load.image("phaser", "../assets/sprites/phaser.png");
-    };
-    /*
-     * LOADUPDATE() IS CALLED DURING LOADER PROCESS -> AFTER PRELOAD()
-     * ONLY HAPPENS IF ASSETS LOAD UP IN PRELOAD() METHOD
-     */
-    GameState.prototype.loadUpdate = function () { };
-    /*
-     * LOADRENDER() IS CALLED DURING LOADER PROCESS -> AFTER LOADUPDATE()
-     * ONLY HAPPENS IF ASSETS LOAD UP IN PRELOAD() METHOD
-     * IN CONTRAST TO RENDER() YOU MUST HERE BE SURE THE ASSETS EXISTS
-     */
-    GameState.prototype.loadRender = function () { };
-    /*
-     * CREATE() IS CALLED AFTER PRELOAD()
-     * CREATE YOUR OBJECTS HERE
-     */
     GameState.prototype.create = function () {
-        this.m_phaserSprite = this.add.sprite(this.game.width / 2, this.game.height / 2, 'phaser');
-        this.m_phaserSprite.anchor.setTo(0.5, 0.5);
+        /* create the game objects */
+        this.paddleOne = new Player_1.Player(this.game, 160, this.game.world.centerY, 1);
+        this.paddleTwo = new Player_1.Player(this.game, 620, this.game.world.centerY, 3);
+        this.ball = new Ball_1.Ball(this.game, this.game.world.centerX, this.game.world.centerY, 6, -7);
     };
-    /*
-     * UPDATE() IS CALLED DURING THE CORE GAME LOOP
-     * AFTER debug, physics, plugins and the Stage have had their preUpdate methods called.
-     * BEFORE Stage, Tweens, Sounds, Input, Physics, Particles and Plugins have had their postUpdate methods called.
-     */
     GameState.prototype.update = function () {
+        /* if the ball hits the left wall */
+        if (this.ball.getPos().x < 0) {
+            this.updateScoreAndReset(1);
+        }
+        /* if the ball hits the right wall */
+        if (this.ball.getPos().x > this.game.width - 8) {
+            this.updateScoreAndReset(0);
+        }
+        /* collision check */
+        this.game.physics.arcade.overlap(this.paddleOne, this.ball, this.paddleBallCollision, null, this);
+        this.game.physics.arcade.overlap(this.paddleTwo, this.ball, this.paddleBallCollision, null, this);
+        this.aiMovePaddle();
     };
-    /*
-     * PRERENDER() IS CALLED AFTER ALL GAME OBJECTS HAVE BEEN UPDATED, BUT BEFORE ANY RENDERING TAKES PLACE
-     */
-    GameState.prototype.preRender = function () { };
-    /*
-     * NEARLY ALL OBJECTS IN PHASER RENDER AUTOMATICALLY
-     * RENDER() IS CALLED AFTER THE GAME RENDERER AND PLUGINS HAVE RENDERED, SO HERE DO FINAL POST-PRECESSING STYLE EFFECTS
-     * HAPPENS BEFORE POSTRENDER()
-     */
-    GameState.prototype.render = function () { };
-    /*
-     * PAUSED() WILL BE CALLED IF THE CORE GAME LOOP IS PAUSED
-     */
-    GameState.prototype.paused = function () { };
-    /*
-     * PAUSEUPDATE() IS CALLED WHILE THE GAME IS PAUSED INSTEAD OF PREUPDATE, UPDATE AND POSTUPDATE
-     */
-    GameState.prototype.pauseUpdate = function () { };
-    /*
-     * IF GAME IS SET TO SCALEMODE RESIZE, THEN BROWSER WILL CALL RESIZE() EACH TIME RESIZE HAPPENS
-     */
-    GameState.prototype.resize = function () { };
-    /*
-     * RESUMED() IS CALLED WHEN THE CORE GAME LOOP RESUMES FROM A PAUSED STATE
-     */
-    GameState.prototype.resumed = function () { };
-    /*
-     * SHUTDOWN() WILL BE CALLED WHEN THE STATE IS SHUTDOWN (i.e. YOU SWITCH TO ANOTHER STATE FROM THIS ONE)
-     */
-    GameState.prototype.shutdown = function () {
-        ;
+    GameState.prototype.render = function () {
+        /* render game objects */
+        this.paddleOne.render();
+        this.paddleTwo.render();
+        this.ball.render();
+    };
+    GameState.prototype.paddleBallCollision = function (_paddle, _ball) {
+        /* inverse the x-velocity */
+        _ball.setVelX(-_ball.getVel().x);
+    };
+    GameState.prototype.updateScoreAndReset = function (_player) {
+        /* get the x and y position of the font */
+        var x;
+        var y;
+        if (_player == 0) {
+            x = 200;
+            y = 30;
+        }
+        else if (_player == 1) {
+            x = 580;
+            y = 30;
+        }
+        /* update the score and redraw */
+        this.scores[_player]++;
+        this.scoreTexts[_player].destroy();
+        this.scoreTexts[_player] = this.game.add.text(x, y, "" + this.scores[_player], { font: "28px Finger Paint", fill: "#fff" });
+        /* reset ball position */
+        this.ball.restart(_player);
+    };
+    GameState.prototype.aiMovePaddle = function () {
+        /* if paddle one simple computer ai */
+        if (this.paddleOne.getTypePlayer() == 3) {
+            if (this.paddleOne.getPos().y > this.ball.getPos().y + this.p1) {
+                this.paddleOne.setMoveUp(true);
+            }
+            else if (this.paddleOne.getPos().y < this.ball.getPos().y - this.p1) {
+                this.paddleOne.setMoveDown(true);
+            }
+            else {
+                this.paddleOne.setMoveUp(false);
+                this.paddleOne.setMoveDown(false);
+            }
+        }
+        /* if paddle two simple computer ai */
+        if (this.paddleTwo.getTypePlayer() == 3) {
+            if (this.paddleTwo.getPos().y > this.ball.getPos().y + this.p2) {
+                this.paddleTwo.setMoveUp(true);
+            }
+            else if (this.paddleTwo.getPos().y < this.ball.getPos().y - this.p2) {
+                this.paddleTwo.setMoveDown(true);
+            }
+            else {
+                this.paddleTwo.setMoveUp(false);
+                this.paddleTwo.setMoveDown(false);
+            }
+        }
     };
     return GameState;
 }(Phaser.State));
@@ -103541,6 +103572,82 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var Ball = (function (_super) {
+    __extends(Ball, _super);
+    function Ball(game, x, y, vx, vy) {
+        var _this = _super.call(this, game, x, y) || this;
+        /* VARIABLES */
+        _this.bodyRectangle = new Phaser.Rectangle(x, y, 8, 8);
+        /* PHYSICS */
+        game.physics.enable(_this, Phaser.Physics.ARCADE);
+        _this.body.setSize(8, 8);
+        _this.body.velocity.setTo(vx, vy);
+        /* finally add the new object to the game and return it */
+        game.add.existing(_this);
+        return _this;
+    }
+    /* GETTER AND SETTER FUNCTIONS */
+    Ball.prototype.getPos = function () { return this.position; };
+    Ball.prototype.getVel = function () { return this.body.velocity; };
+    Ball.prototype.setVelX = function (_velX) { this.body.velocity.x = _velX; };
+    Ball.prototype.update = function () {
+        /* update the position */
+        this.position.x += this.body.velocity.x;
+        this.position.y += this.body.velocity.y;
+        /* if the ball hits the upper or lower wall */
+        if (this.position.y < 0 || this.position.y > this.game.height - this.body.height) {
+            this.body.velocity.y = -this.body.velocity.y;
+        }
+        /* update the body rectangle position */
+        this.bodyRectangle = new Phaser.Rectangle(this.body.position.x, this.body.position.y, 8, 8);
+    };
+    Ball.prototype.render = function () {
+        /* render the rectangle */
+        this.game.debug.geom(this.bodyRectangle, '#ffffff');
+    };
+    Ball.prototype.restart = function (_player) {
+        /* reset the position */
+        this.position.x = this.game.world.centerX;
+        this.position.y = Math.floor(Math.random() * 488) + 1;
+        /* reset the velocity */
+        var velX = 6;
+        var velY = 6 * (Math.random() < 0.5 ? -1 : 1);
+        if (_player == 1) {
+            this.body.velocity.x = -velX;
+            this.body.velocity.y = velY;
+        }
+        else if (_player == 2) {
+            this.body.velocity.x = velX;
+            this.body.velocity.y = -velY;
+        }
+    };
+    return Ball;
+}(Phaser.Sprite));
+exports.Ball = Ball;
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
 /// <reference path="../node_modules/phaser/typescript/phaser.d.ts"/>
 __webpack_require__(1);
 __webpack_require__(3);
@@ -103568,14 +103675,117 @@ exports.Game = Game;
 // when the page has finished loading, create our game
 window.onload = function () {
     var game = new Game({
-        width: 800,
-        height: 600,
+        width: 799,
+        height: 488,
         renderer: Phaser.CANVAS,
-        parent: 'phaser-ts-webpack-boilerplate',
+        parent: 'atari-pong',
         transparent: false,
         antialias: false
     });
 };
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var Player = (function (_super) {
+    __extends(Player, _super);
+    function Player(game, x, y, type) {
+        var _this = _super.call(this, game, x, y) || this;
+        /* VARIABLES */
+        _this.bodyRectangle = new Phaser.Rectangle(x, y, 8, 30);
+        _this.typePlayer = type;
+        _this.computerMoveUp = false;
+        _this.computerMoveDown = false;
+        /* INPUT */
+        if (_this.typePlayer == 1) {
+            _this.moveUpKey = game.input.keyboard.addKey(Phaser.Keyboard.UP);
+            _this.moveDownKey = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
+        }
+        else if (_this.typePlayer == 2) {
+            _this.moveUpKey = game.input.keyboard.addKey(Phaser.Keyboard.Q);
+            _this.moveDownKey = game.input.keyboard.addKey(Phaser.Keyboard.A);
+        }
+        /* PHYSICS */
+        game.physics.enable(_this, Phaser.Physics.ARCADE);
+        _this.body.setSize(8, 30);
+        /* finally add the new object to the game and return it */
+        game.add.existing(_this);
+        return _this;
+    }
+    Player.prototype.getTypePlayer = function () { return this.typePlayer; };
+    Player.prototype.getPos = function () { return this.position; };
+    Player.prototype.setPos = function (_pos) { this.position = _pos; };
+    Player.prototype.setMoveUp = function (_mu) { this.computerMoveUp = _mu; };
+    Player.prototype.setMoveDown = function (_md) { this.computerMoveDown = _md; };
+    /*
+     * UPDATE() IS CALLED DURING THE CORE GAME LOOP
+     * AFTER debug, physics, plugins and the Stage have had their preUpdate methods called.
+     * BEFORE Stage, Tweens, Sounds, Input, Physics, Particles and Plugins have had their postUpdate methods called.
+     */
+    Player.prototype.update = function () {
+        if (this.typePlayer == 1) {
+            if (this.moveUpKey.isDown && this.position.y > 30) {
+                this.body.velocity.y -= 60;
+            }
+            else if (this.moveDownKey.isDown && this.position.y < 440) {
+                this.body.velocity.y += 60;
+            }
+            else {
+                this.body.velocity.y = 0;
+            }
+        }
+        else if (this.typePlayer == 2) {
+            if (this.moveUpKey.isDown && this.position.y > 30) {
+                this.body.velocity.y -= 60;
+            }
+            else if (this.moveDownKey.isDown && this.position.y < 440) {
+                this.body.velocity.y += 60;
+            }
+            else {
+                this.body.velocity.y = 0;
+            }
+        }
+        else if (this.typePlayer == 3) {
+            if (this.computerMoveUp && this.position.y > 30) {
+                this.body.velocity.y -= 60;
+            }
+            else if (this.computerMoveDown && this.position.y < 440) {
+                this.body.velocity.y += 60;
+            }
+            else {
+                this.body.velocity.y = 0;
+            }
+        }
+        /* update the body rectangle position */
+        this.bodyRectangle = new Phaser.Rectangle(this.body.position.x, this.body.position.y, 8, 30);
+    };
+    Player.prototype.render = function () {
+        /* render the rectangle */
+        this.game.debug.geom(this.bodyRectangle, '#ffffff');
+    };
+    return Player;
+}(Phaser.Sprite));
+exports.Player = Player;
 
 
 /***/ })
