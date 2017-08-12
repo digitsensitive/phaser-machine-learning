@@ -51,7 +51,7 @@ export class GameState extends Phaser.State {
   }
 
   create(): void {
-    console.log(this.game.world.centerX);
+
     /* create the game objects */
     this.paddleOne = new Player(this.game, 160, this.game.world.centerY, 1);
     this.paddleTwo = new Player(this.game, this.game.world.centerX + (400-160), this.game.world.centerY, 3);

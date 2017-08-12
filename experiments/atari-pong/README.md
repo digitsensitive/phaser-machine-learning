@@ -12,3 +12,13 @@ The game was originally manufactured by Atari, which released it in 1972. Allan 
 - Paddles (each): 8x30 pixels
 - Center line (dashed, each): 4x8 pixels
 - Score (each): Height 64 pixels.
+
+## Versions
+
+### 0.0.2 (in progress)
+- dashed center line
+- integrate machine learning algorithm
+
+### 0.0.1 (stable)
+- All elements integrated
+- Player and AI working
