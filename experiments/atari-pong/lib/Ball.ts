@@ -61,8 +61,8 @@ export class Ball extends Phaser.Sprite {
     this.position.y = Math.floor(Math.random() * 488) + 1;
 
     /* reset the velocity */
-    let velX = 6;
-    let velY = 6 * (Math.random() < 0.5 ? -1 : 1);
+    let velX = 4;
+    let velY = 4 * (Math.random() < 0.5 ? -1 : 1);
 
     if (_player == 1) {
       this.body.velocity.x = -velX;

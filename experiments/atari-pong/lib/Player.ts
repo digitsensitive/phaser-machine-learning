@@ -24,7 +24,7 @@ export class Player extends Phaser.Sprite {
   public setMoveDown(_md: boolean): void { this.computerMoveDown = _md; }
 
   constructor(game: Phaser.Game, x: number, y: number, type: number) {
-    super(game, x, y);
+    super(game, x-4, y);
 
     /* VARIABLES */
     this.bodyRectangle = new Phaser.Rectangle(x, y, 8, 30);
@@ -61,20 +61,32 @@ export class Player extends Phaser.Sprite {
 
     if (this.typePlayer == 1) {
       if (this.moveUpKey.isDown && this.position.y > 30) { this.body.velocity.y -= 60; }
-      else if (this.moveDownKey.isDown && this.position.y < 440) { this.body.velocity.y += 60; }
-      else { this.body.velocity.y = 0; }
+      else if (this.moveDownKey.isDown && this.position.y < (488 - this.body.height)) { this.body.velocity.y += 60; }
+      else {
+        this.body.velocity.y = 0;
+        if (this.position.y < 0) { this.position.y = 0; }
+        if (this.position.y > (488 - this.body.height)) { this.position.y = 488 - this.body.height; }
+      }
     }
 
     else if (this.typePlayer == 2) {
       if (this.moveUpKey.isDown && this.position.y > 30) { this.body.velocity.y -= 60; }
       else if (this.moveDownKey.isDown && this.position.y < 440) { this.body.velocity.y += 60; }
-      else { this.body.velocity.y = 0; }
+      else {
+        this.body.velocity.y = 0;
+        if (this.position.y < 0) { this.position.y = 0; }
+        if (this.position.y > (488 - this.body.height)) { this.position.y = 488 - this.body.height; }
+      }
     }
 
     else if (this.typePlayer == 3) {
       if (this.computerMoveUp && this.position.y > 30) { this.body.velocity.y -= 60; }
       else if (this.computerMoveDown && this.position.y < 440) { this.body.velocity.y += 60; }
-      else { this.body.velocity.y = 0; }
+      else {
+        this.body.velocity.y = 0;
+        if (this.position.y < 0) { this.position.y = 0; }
+        if (this.position.y > (488 - this.body.height)) { this.position.y = 488 - this.body.height; }
+      }
     }
 
     /* update the body rectangle position */

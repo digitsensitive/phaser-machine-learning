@@ -36,26 +36,26 @@ export class GameState extends Phaser.State {
     /* ui */
     this.scores = [0, 0];
     this.scoreTexts = [];
-    this.scoreTexts.push(this.game.add.text(200, 30, ""+this.scores[0], {font: "28px Finger Paint", fill: "#fff"}));
-    this.scoreTexts.push(this.game.add.text(580, 30, ""+this.scores[1], {font: "28px Finger Paint", fill: "#fff"}));
+    this.scoreTexts.push(this.game.add.text(200, 30, ""+this.scores[0], {font: "64px Connection", fill: "#fff"}));
+    this.scoreTexts.push(this.game.add.text(560, 30, ""+this.scores[1], {font: "64px Connection", fill: "#fff"}));
 
     /* create and init our center line */
     this.centerLine = this.game.add.graphics(0,0);
 
     /* set the characteristics of the line */
     this.centerLine.lineStyle(4, 0xffffff, 0.6);
-    this.centerLine.moveTo(this.world.centerX,0);//moving position of graphic if you draw mulitple lines
-    this.centerLine.lineTo(this.world.centerX,this.world.height);
+    this.centerLine.moveTo(this.world.centerX, 0);//moving position of graphic if you draw mulitple lines
+    this.centerLine.lineTo(this.world.centerX, this.world.height);
     this.centerLine.endFill();
 
   }
 
   create(): void {
-
+    console.log(this.game.world.centerX);
     /* create the game objects */
     this.paddleOne = new Player(this.game, 160, this.game.world.centerY, 1);
-    this.paddleTwo = new Player(this.game, 620, this.game.world.centerY, 3);
-    this.ball = new Ball(this.game, this.game.world.centerX, this.game.world.centerY, 6, -7);
+    this.paddleTwo = new Player(this.game, this.game.world.centerX + (400-160), this.game.world.centerY, 3);
+    this.ball = new Ball(this.game, this.game.world.centerX, this.game.world.centerY, 4, -4);
 
   }
 
@@ -102,12 +102,12 @@ export class GameState extends Phaser.State {
     let y;
 
     if (_player == 0) { x = 200; y = 30;}
-    else if (_player == 1) { x = 580; y = 30;}
+    else if (_player == 1) { x = 560; y = 30;}
 
     /* update the score and redraw */
     this.scores[_player]++;
     this.scoreTexts[_player].destroy();
-    this.scoreTexts[_player] = this.game.add.text(x, y, ""+this.scores[_player], {font: "28px Finger Paint", fill: "#fff"});
+    this.scoreTexts[_player] = this.game.add.text(x, y, ""+this.scores[_player], {font: "64px Connection", fill: "#fff"});
 
     /* reset ball position */
     this.ball.restart(_player);

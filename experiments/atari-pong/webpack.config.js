@@ -1,7 +1,7 @@
 var path = require('path');
 
 // Phaser webpack config
-var phaserPath = path.join(__dirname, '/node_modules/phaser/');
+var phaserPath = path.join(__dirname, '/node_modules/phaser-ce/');
 var phaser = path.join(phaserPath, 'build/custom/phaser-split.js');
 var pixi = path.join(phaserPath, 'build/custom/pixi.js');
 var p2 = path.join(phaserPath, 'build/custom/p2.js');
