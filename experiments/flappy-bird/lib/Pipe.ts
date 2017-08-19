@@ -8,23 +8,25 @@
 export class Pipe extends Phaser.Sprite {
 
   /* VARIABLES */
+  private holePosition: number;
 
   /* GETTER AND SETTER */
+  public getHolePosition(): number { return this.holePosition; }
+  public getPosition(): Phaser.Point { return this.position; }
 
-
-  constructor(game: Phaser.Game, x: number, y: number, name: string) {
+  constructor(game: Phaser.Game, x: number, y: number, name: string, hole: number) {
     super(game, x, y, name);
 
     /* VARIABLES */
+    this.holePosition = hole;
 
     /* SPRITE */
     this.anchor.setTo(0, 0);
 
-
     /* PHYSICS */
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.physics.enable(this);
-    this.body.setSize(30, 30);
+    this.body.setSize(30, 60);
     this.body.velocity.x = -200;
 
     /* automatically kill the pipe when it's no longer visible */
@@ -41,5 +43,6 @@ export class Pipe extends Phaser.Sprite {
   update(): void {}
 
   render(): void {}
+
 
 }

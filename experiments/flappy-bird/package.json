@@ -29,6 +29,7 @@
     "webpack-dev-server": "^2.4.5"
   },
   "dependencies": {
-    "phaser-ce": "^2.8.3"
+    "phaser-ce": "^2.8.3",
+    "neuroevolution-typescript": "0.0.15"
   }
 }

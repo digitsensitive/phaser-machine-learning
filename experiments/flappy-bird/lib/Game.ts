@@ -52,7 +52,8 @@ export class Game extends Phaser.Game {
     /* this.scale.scaleMode = Phaser.ScaleManager.EXACT_FIT; */
     /* .scale.scaleMode = 2; */
     /* this.scale.refresh(); */
-    }
+  }
+
 }
 
 

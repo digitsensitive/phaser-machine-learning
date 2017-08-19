@@ -4,17 +4,31 @@
 * @license      Eric Kuhn
 */
 
+import * as NE from '../node_modules/neuroevolution-typescript/main';
+
 import { Bird } from './Bird';
 import { Pipe } from './Pipe';
 
+const neuvol: NE.Neuroevolution = new NE.Neuroevolution({
+  network: [2, [2], 1],
+  population: 50
+});
+
 export class GameState extends Phaser.State {
 
+  /* neuroevolution */
+  private gen: any[];
+  private scoreNE: number;
+  private maxScore: number;
+
   /* game objects */
-  private bird: Bird;
+  private birds: Bird[];
   private pipes: Phaser.Group;
 
   /* variables */
   private timer: Phaser.TimerEvent;
+  private hole: number;
+  private dead: number;
 
   /* ui */
   private score: number;
@@ -27,12 +41,19 @@ export class GameState extends Phaser.State {
 
   init() {
 
+    /* init neuroevolution */
+    this.gen = [];
+    this.scoreNE = 0;
+    this.maxScore = 0;
+
     /* init game objects */
-    this.bird = undefined;
+    this.birds = [];
     this.pipes = this.game.add.group();
 
     /* variables */
     this.timer = undefined;
+    this.hole = 0;
+    this.dead = 0;
     this.game.stage.backgroundColor = '#71c5cf';
 
     /* ui */
@@ -45,29 +66,75 @@ export class GameState extends Phaser.State {
 
   create(): void {
 
+    /* create birds */
+    this.gen = neuvol.nextGeneration();
+    for (let i in this.gen) {
+    	let b = new Bird(this.game, 80, this.game.world.centerY, 'bird');
+    	this.birds.push(b);
+    }
+
     /* create the game objects */
-    this.bird = new Bird(this.game, 80, this.game.world.centerY, 'bird');
+    //this.bird = new Bird(this.game, 80, this.game.world.centerY, 'bird');
 
     /* timer for creating pipes */
+    this.addRowOfPipes();
     this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
 
   }
 
   update(): void {
 
-    if (this.bird.getPosition().y < 0 || this.bird.getPosition().y > 600) {
-        this.restartGame();
+    for (let i = 0; i < this.birds.length; i++) {
+      if (this.birds[i].alive) {
+        var nextHoll;
+        var dontGoFurthere = false;
+
+        this.pipes.forEach(function(item) {
+
+          if (item != undefined) {
+            if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
+              nextHoll = (item.getHolePosition()*60)/600;
+              dontGoFurthere = true;
+            }
+          }
+
+        }, this);
+
+
+        var inputs = [this.birds[i].getPosition().y / 600, nextHoll];
+
+        var res = this.gen[i].compute(inputs);
+
+        if (res > 0.5) {
+          this.birds[i].flap();
+        }
+
+
+        if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > 600) {
+            this.birds[i].alive = false;
+        }
+
+        this.game.physics.arcade.overlap(this.birds[i], this.pipes, this.hitPipe, null, this);
+
+        if (!this.birds[i].alive) {
+          neuvol.networkScore(this.gen[i], this.scoreNE);
+
+          if(this.isItEnd()){
+            this.restartGame();
+          }
+        }
+      }
     }
 
-    this.game.physics.arcade.overlap(this.bird, this.pipes, this.hitPipe, null, this);
-
+    this.scoreNE++;
+  	this.maxScore = (this.scoreNE > this.maxScore) ? this.scoreNE : this.maxScore;
 
   }
 
-  private addOnePipe(x, y): void {
+  private addOnePipe(x, y, hole): void {
 
     /* create a pipe at the position x and y */
-    let pipe = new Pipe(this.game, x, y, 'pipe');
+    let pipe = new Pipe(this.game, x, y, 'pipe', hole);
 
     /* add pipe to group */
     this.pipes.add(pipe);
@@ -82,39 +149,39 @@ export class GameState extends Phaser.State {
 
     // Randomly pick a number between 1 and 5
     // This will be the hole position
-    var hole = Math.floor(Math.random() * 5) + 1;
+    this.hole = Math.floor(Math.random() * 5) + 1;
 
     // Add the 6 pipes
     // With one big hole at position 'hole' and 'hole + 1'
     for (let i = 0; i < 10; i++) {
-      if (i != hole && i != hole + 1) {
-        this.addOnePipe(400, i * 60);
+      if (i != this.hole && i != (this.hole + 1)) {
+        this.addOnePipe(400, i * 60, this.hole);
       }
+
     }
+
   }
 
-  private hitPipe(): void {
-    /* If the bird has already hit a pipe, do nothing
-       It means the bird is already falling off the screen */
-    if (this.bird.alive == false) {
-      return;
+  private hitPipe(_bird) {
+    _bird.alive = false;
+  }
+
+  private isItEnd(): boolean {
+
+    for (let i in this.birds) {
+
+    		if(this.birds[i].alive){
+    			return false;
+    		}
+
     }
 
-    /* Set the alive property of the bird to false */
-    this.bird.alive = false;
+    return true;
 
-    /* Prevent new pipes from appearing */
-    this.game.time.events.remove(this.timer);
-
-    /* Go through all the pipes, and stop their movement */
-    this.pipes.forEach(function(p) {
-        p.body.velocity.x = 0;
-    }, this);
   }
 
   private restartGame(): void {
     this.game.state.restart();
   }
-
 
 }

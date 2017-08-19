@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 9);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -97,25 +97,170 @@ module.exports = g;
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["PIXI"] = __webpack_require__(7);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Layer_1 = __webpack_require__(16);
+/* Neural Network class, composed of Neuron Layers */
+var Network = (function () {
+    function Network() {
+        /* init parameters */
+        this.layers = [];
+    }
+    /**
+     * Generate the Network layers
+     * @param  {[type]} _input   [Number of Neurons in Input layer]
+     * @param  {[type]} _hiddens [Number of Neurons per Hidden layer]
+     * @param  {[type]} _output  [Number of Neurons in Output layer]
+     * @return {[type]}          [void]
+     */
+    Network.prototype.perceptronGeneration = function (_input, _hiddens, _output) {
+        var index = 0;
+        var previousNeurons = 0;
+        var l = new Layer_1.Layer(index);
+        /* Number of inputs will be set to 0 since it is an input layer */
+        l.populate(_input, previousNeurons);
+        /* number of input is size of previous layer */
+        previousNeurons = _input;
+        this.layers.push(l);
+        index++;
+        for (var i in _hiddens) {
+            /* Repeat same process as first layer for each hidden layer */
+            var l_1 = new Layer_1.Layer(index);
+            l_1.populate(_hiddens[i], previousNeurons);
+            previousNeurons = _hiddens[i];
+            this.layers.push(l_1);
+            index++;
+        }
+        var layer = new Layer_1.Layer(index);
+        /* Number of input is equal to the size of the last hidden layer */
+        layer.populate(_output, previousNeurons);
+        this.layers.push(layer);
+    };
+    /**
+     * Create a copy of the Network (neurons and weights)
+     * Returns number of neurons per layer and a flat array of all weights.
+     * @return {Object} [Network data]
+     */
+    Network.prototype.getSave = function () {
+        var datas = {
+            neurons: [],
+            weights: [] // Weights of each Neuron's inputs.
+        };
+        for (var i in this.layers) {
+            datas.neurons.push(this.layers[i].getNeurons().length);
+            for (var j in this.layers[i].getNeurons()) {
+                for (var k in this.layers[i].getNeurons()[j].getWeights()) {
+                    /* push all input weights of each Neuron of each Layer into a flat array */
+                    datas.weights.push(this.layers[i].getNeurons()[j].getWeights()[k]);
+                }
+            }
+        }
+        return datas;
+    };
+    /**
+     * Apply network data (neurons and weights)
+     * @param {[type]} _save [Copy of network data (neurons and weights)]
+     */
+    Network.prototype.setSave = function (_save) {
+        var previousNeurons = 0;
+        var index = 0;
+        var indexWeights = 0;
+        this.layers = [];
+        for (var i in _save.neurons) {
+            // Create and populate layers
+            var layer = new Layer_1.Layer(index);
+            layer.populate(_save.neurons[i], previousNeurons);
+            for (var j in layer.getNeurons()) {
+                for (var k in layer.getNeurons()[j].getWeights()) {
+                    /* Apply neurons weights to each Neuron */
+                    layer.getNeurons()[j].getWeights()[k] = _save.weights[indexWeights];
+                    /* increment index of flat array */
+                    indexWeights++;
+                }
+            }
+            previousNeurons = _save.neurons[i];
+            index++;
+            this.layers.push(layer);
+        }
+    };
+    /**
+     * Compute the output of an input
+     * @param  {[type]} _inputs [Set of inputs]
+     * @return {Object}         [Network output]
+     */
+    Network.prototype.compute = function (_inputs) {
+        /* Set the value of each Neuron in the input layer */
+        for (var i in _inputs) {
+            if (this.layers[0] && this.layers[0].getNeurons()[i]) {
+                this.layers[0].getNeurons()[i].value = _inputs[i];
+            }
+        }
+        /* Previous layer is input layer */
+        var prevLayer = this.layers[0];
+        for (var i = 1; i < this.layers.length; i++) {
+            for (var j in this.layers[i].getNeurons()) {
+                /* For each Neuron in each layer */
+                var sum = 0;
+                for (var k in prevLayer.getNeurons()) {
+                    /* Every Neuron in the previous layer is an input to each Neuron in the next layer */
+                    sum += prevLayer.getNeurons()[k].getValue() * this.layers[i].getNeurons()[j].getWeights()[k];
+                }
+                /* compute the activation of the Neuron */
+                this.layers[i].getNeurons()[j].setValue(this.activation(sum));
+            }
+            prevLayer = this.layers[i];
+        }
+        /* all outputs of the Network */
+        var out = [];
+        var lastLayer = this.layers[this.layers.length - 1];
+        for (var i in lastLayer.getNeurons()) {
+            out.push(lastLayer.getNeurons()[i].getValue());
+        }
+        return out;
+    };
+    /**
+     * Logistic activation function
+     * @param  {number} a  [Input Value]
+     * @return {number}    [Return Value]
+     */
+    Network.prototype.activation = function (a) {
+        var ap = (-a) / 1;
+        return (1 / (1 + Math.exp(ap)));
+    };
+    return Network;
+}());
+exports.Network = Network;
+
 
 /***/ }),
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["Phaser"] = __webpack_require__(6);
+/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["PIXI"] = __webpack_require__(8);
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["p2"] = __webpack_require__(5);
+/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["Phaser"] = __webpack_require__(7);
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
 /* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["p2"] = __webpack_require__(6);
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -136,22 +281,132 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var NE = __webpack_require__(19);
+var Bird_1 = __webpack_require__(10);
+var Pipe_1 = __webpack_require__(12);
+var neuvol = new NE.Neuroevolution({
+    network: [2, [2], 1],
+    population: 50
+});
 var GameState = (function (_super) {
     __extends(GameState, _super);
     function GameState() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    /* game objects */
-    /* environment */
-    /* ui */
+    GameState.prototype.preload = function () {
+        this.game.load.image("bird", "../assets/sprites/bird.png");
+        this.game.load.image("pipe", "../assets/sprites/pipe.png");
+    };
     GameState.prototype.init = function () {
+        /* init neuroevolution */
+        this.gen = [];
+        this.scoreNE = 0;
+        this.maxScore = 0;
         /* init game objects */
+        this.birds = [];
+        this.pipes = this.game.add.group();
+        /* variables */
+        this.timer = undefined;
+        this.hole = 0;
+        this.dead = 0;
+        this.game.stage.backgroundColor = '#71c5cf';
         /* ui */
+        this.score = -1;
+        this.scoreText = [];
+        this.scoreText.push(this.game.add.text(this.game.world.centerX - 14, 30, "0", { font: "40px Connection", fill: "#000" }));
+        this.scoreText.push(this.game.add.text(this.game.world.centerX - 16, 30, "0", { font: "40px Connection", fill: "#fff" }));
     };
     GameState.prototype.create = function () {
+        /* create birds */
+        this.gen = neuvol.nextGeneration();
+        for (var i in this.gen) {
+            var b = new Bird_1.Bird(this.game, 80, this.game.world.centerY, 'bird');
+            this.birds.push(b);
+        }
         /* create the game objects */
+        //this.bird = new Bird(this.game, 80, this.game.world.centerY, 'bird');
+        /* timer for creating pipes */
+        this.addRowOfPipes();
+        this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
     };
     GameState.prototype.update = function () {
+        for (var i = 0; i < this.birds.length; i++) {
+            var nextHoll;
+            var dontGoFurthere = false;
+            this.pipes.forEach(function (item) {
+                if (item != undefined) {
+                    if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
+                        nextHoll = (item.getHolePosition() * 60 + 60) / 600;
+                        dontGoFurthere = true;
+                    }
+                }
+            }, this);
+            var inputs = [this.birds[i].getPosition().y / 600, nextHoll];
+            var res = this.gen[i].compute(inputs);
+            if (res > 0.5) {
+                this.birds[i].flap();
+            }
+            if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > 600) {
+                this.birds[i].alive = false;
+            }
+            this.game.physics.arcade.overlap(this.birds[i], this.pipes, this.hitPipe, null, this);
+            if (!this.birds[i].alive) {
+                this.birds.splice(i, 1);
+                neuvol.networkScore(this.gen[i], this.scoreNE);
+                if (this.isItEnd()) {
+                    this.restartGame();
+                }
+            }
+        }
+        this.scoreNE++;
+        this.maxScore = (this.scoreNE > this.maxScore) ? this.scoreNE : this.maxScore;
+    };
+    GameState.prototype.addOnePipe = function (x, y, hole) {
+        /* create a pipe at the position x and y */
+        var pipe = new Pipe_1.Pipe(this.game, x, y, 'pipe', hole);
+        /* add pipe to group */
+        this.pipes.add(pipe);
+    };
+    GameState.prototype.addRowOfPipes = function () {
+        /* update the score */
+        this.score += 1;
+        this.scoreText[0].text = this.scoreText[1].text = "" + this.score;
+        // Randomly pick a number between 1 and 5
+        // This will be the hole position
+        this.hole = Math.floor(Math.random() * 5) + 1;
+        // Add the 6 pipes
+        // With one big hole at position 'hole' and 'hole + 1'
+        for (var i = 0; i < 10; i++) {
+            if (i != this.hole && i != this.hole + 1) {
+                this.addOnePipe(400, i * 60, this.hole);
+            }
+        }
+    };
+    GameState.prototype.hitPipe = function () {
+        /* If the bird has already hit a pipe, do nothing
+           It means the bird is already falling off the screen */
+        for (var i = 0; i < this.birds.length; i++) {
+            if (this.birds[i].alive == false) {
+                return;
+            }
+            /* Set the alive property of the bird to false */
+            this.birds[i].alive = false;
+        }
+        /* Prevent new pipes from appearing */
+        //this.game.time.events.remove(this.timer);
+        /* Go through all the pipes, and stop their movement */
+        //this.pipes.forEach(function(p) {
+        //    p.body.velocity.x = 0;
+        //}, this);
+    };
+    GameState.prototype.isItEnd = function () {
+        if (this.birds.length == 0) {
+            return true;
+        }
+        return false;
+    };
+    GameState.prototype.restartGame = function () {
+        this.game.state.restart();
     };
     return GameState;
 }(Phaser.State));
@@ -159,7 +414,7 @@ exports.GameState = GameState;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var require;var require;/**
@@ -13802,7 +14057,7 @@ World.prototype.raycast = function(result, ray){
 });
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -98310,10 +98565,10 @@ PIXI.canUseNewCanvasBlendModes = function () {
 * "What matters in this life is not what we do but what we do for others, the legacy we leave and the imprint we make." - Eric Meyer
 */
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -105889,7 +106144,7 @@ PIXI.TextureUvs = function()
 }).call(this);
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -106079,7 +106334,73 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 9 */
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var Bird = (function (_super) {
+    __extends(Bird, _super);
+    function Bird(game, x, y, name) {
+        var _this = _super.call(this, game, x, y, name) || this;
+        /* SPRITE */
+        _this.anchor.setTo(-0.2, 0.5);
+        /* ANIMATIONS */
+        _this.anim = [];
+        _this.anim.push(game.add.tween(_this).to({ angle: -20 }, 100));
+        /* INPUT */
+        _this.jumpKey = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        _this.jumpKey.onDown.add(_this.jump, _this);
+        /* PHYSICS */
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.enable(_this);
+        _this.body.gravity.y = 1000;
+        _this.body.setSize(30, 30);
+        /* finally add the new object to the game and return it */
+        game.add.existing(_this);
+        return _this;
+    }
+    /* GETTER AND SETTER */
+    Bird.prototype.getPosition = function () { return this.position; };
+    Bird.prototype.update = function () {
+        if (this.angle < 20)
+            this.angle += 1;
+    };
+    Bird.prototype.jump = function () {
+        if (this.alive) {
+            this.body.velocity.y = -350;
+            this.anim[0].start();
+        }
+    };
+    Bird.prototype.flap = function () {
+        if (this.alive) {
+            this.body.velocity.y = -350;
+            this.anim[0].start();
+        }
+    };
+    return Bird;
+}(Phaser.Sprite));
+exports.Bird = Bird;
+
+
+/***/ }),
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -106101,10 +106422,10 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 /// <reference path="../node_modules/phaser-ce/typescript/phaser.d.ts"/>
-__webpack_require__(1);
-__webpack_require__(3);
 __webpack_require__(2);
-var GameState_1 = __webpack_require__(4);
+__webpack_require__(4);
+__webpack_require__(3);
+var GameState_1 = __webpack_require__(5);
 var Game = (function (_super) {
     __extends(Game, _super);
     function Game(aParams) {
@@ -106127,7 +106448,7 @@ exports.Game = Game;
 // when the page has finished loading, create our game
 window.onload = function () {
     var game = new Game({
-        width: 300,
+        width: 400,
         height: 600,
         renderer: Phaser.CANVAS,
         parent: 'flappy-bird',
@@ -106135,6 +106456,467 @@ window.onload = function () {
         antialias: false
     });
 };
+
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var Pipe = (function (_super) {
+    __extends(Pipe, _super);
+    function Pipe(game, x, y, name, hole) {
+        var _this = _super.call(this, game, x, y, name) || this;
+        /* VARIABLES */
+        _this.holePosition = hole;
+        /* SPRITE */
+        _this.anchor.setTo(0, 0);
+        /* PHYSICS */
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.enable(_this);
+        _this.body.setSize(30, 30);
+        _this.body.velocity.x = -200;
+        /* automatically kill the pipe when it's no longer visible */
+        _this.checkWorldBounds = true;
+        _this.outOfBoundsKill = true;
+        /* finally add the new object to the game and return it */
+        game.add.existing(_this);
+        return _this;
+    }
+    /* GETTER AND SETTER */
+    Pipe.prototype.getHolePosition = function () { return this.holePosition; };
+    Pipe.prototype.getPosition = function () { return this.position; };
+    Pipe.prototype.update = function () { };
+    Pipe.prototype.render = function () { };
+    return Pipe;
+}(Phaser.Sprite));
+exports.Pipe = Pipe;
+
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+/* Generation class, composed of a set of Genomes */
+var Generation = (function () {
+    function Generation(_ne) {
+        /* init parameters */
+        this.genomes = [];
+        this.ne = _ne;
+    }
+    Generation.prototype.getGenomes = function () { return this.genomes; };
+    /**
+     * Add a genome to the generation.
+     * @param {[type]} _genome [Genome to add]
+     */
+    Generation.prototype.addGenome = function (_genome) {
+        /* locate position to insert Genome into, the gnomes should remain sorted */
+        for (var i = 0; i < this.genomes.length; i++) {
+            /* sort in descending order */
+            if (this.ne.getAParams().scoreSort < 0) {
+                if (_genome.score > this.genomes[i].getScore()) {
+                    break;
+                }
+            }
+            else {
+                if (_genome.score < this.genomes[i].getScore()) {
+                    break;
+                }
+            }
+        }
+        /* insert genome into correct position */
+        this.genomes.splice(i, 0, _genome);
+    };
+    /**
+     * Breed to genomes to produce offspring(s)
+     * @param  {[type]} g1       [Genome 1]
+     * @param  {[type]} g2       [Genome 2]
+     * @param  {[type]} nbChilds [Number of offspring (children)]
+     * @return {Object}          [Object]
+     */
+    Generation.prototype.breed = function (g1, g2, nbChilds) {
+        var datas = [];
+        for (var nb = 0; nb < nbChilds; nb++) {
+            /* Deep clone of genome 1 */
+            var data = JSON.parse(JSON.stringify(g1));
+            for (var i in g2.network.weights) {
+                /* Genetic crossover
+                         * 0.5 is the crossover factor.
+                         * FIXME Really should be a predefined constant */
+                if (Math.random() <= 0.5) {
+                    data.network.weights[i] = g2.network.weights[i];
+                }
+            }
+            /* perform mutation on some weights */
+            for (var i in data.network.weights) {
+                if (Math.random() <= this.ne.getAParams().mutationRate) {
+                    data.network.weights[i] += Math.random() * this.ne.getAParams().mutationRate * 2 - this.ne.getAParams().mutationRate;
+                }
+            }
+            datas.push(data);
+        }
+        return datas;
+    };
+    /**
+     * Generate the next generation
+     */
+    Generation.prototype.generateNextGeneration = function () {
+        var nexts = [];
+        for (var i = 0; i < Math.round(this.ne.getAParams().elitism * this.ne.getAParams().population); i++) {
+            if (nexts.length < this.ne.getAParams().population) {
+                /* push a deep copy of ith Genome's Nethwork */
+                nexts.push(JSON.parse(JSON.stringify(this.genomes[i].getNetwork())));
+            }
+        }
+        for (var i = 0; i < Math.round(this.ne.getAParams().randomBehaviour * this.ne.getAParams().population); i++) {
+            var n = JSON.parse(JSON.stringify(this.genomes[0].getNetwork()));
+            for (var k in n.weights) {
+                n.weights[k] = this.randomClamped();
+            }
+            if (nexts.length < this.ne.getAParams().population) {
+                nexts.push(n);
+            }
+        }
+        var max = 0;
+        while (true) {
+            for (var i = 0; i < max; i++) {
+                /* create the children and push them to the nexts array */
+                var childs = this.breed(this.genomes[i], this.genomes[max], (this.ne.getAParams().nbChild > 0 ? this.ne.getAParams().nbChild : 1));
+                for (var c in childs) {
+                    nexts.push(childs[c].network);
+                    if (nexts.length >= this.ne.getAParams().population) {
+                        /* Return once number of children is equal to the
+                         * population by generatino value */
+                        return nexts;
+                    }
+                }
+            }
+            max++;
+            if (max >= this.genomes.length - 1) {
+                max = 0;
+            }
+        }
+    };
+    /**
+     * Returns a random value between -1 and 1
+     * @return {number} [Random Value]
+     */
+    Generation.prototype.randomClamped = function () {
+        return Math.random() * 2 - 1;
+    };
+    return Generation;
+}());
+exports.Generation = Generation;
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Generation_1 = __webpack_require__(13);
+var Network_1 = __webpack_require__(1);
+var Generations = (function () {
+    function Generations(_ne) {
+        /* init parameters */
+        this.generations = [];
+        this.currentGeneration = new Generation_1.Generation(_ne);
+        this.ne = _ne;
+    }
+    Generations.prototype.getGenerations = function () { return this.generations; };
+    /**
+     * Create the first generation
+     * @param  {[type]} _input   [Input layer]
+     * @param  {[type]} _hiddens [Hidden layer(s)]
+     * @param  {[type]} _output  [Output layer]
+     * @return {[type]}          [First Generation]
+     */
+    Generations.prototype.firstGeneration = function (_input, _hiddens, _output) {
+        /* FIXME input, hiddens, output unused */
+        var out = [];
+        for (var i = 0; i < this.ne.getAParams().population; i++) {
+            /* generate the Network and save it */
+            var nn = new Network_1.Network();
+            nn.perceptronGeneration(this.ne.getAParams().network[0], this.ne.getAParams().network[1], this.ne.getAParams().network[2]);
+            out.push(nn.getSave());
+        }
+        this.generations.push(new Generation_1.Generation(this.ne));
+        return out;
+    };
+    /**
+     * Create the next Generation.
+     */
+    Generations.prototype.nextGeneration = function () {
+        if (this.generations.length == 0) {
+            /* need to create first generation */
+            return [];
+        }
+        var gen = this.generations[this.generations.length - 1].generateNextGeneration();
+        this.generations.push(new Generation_1.Generation(this.ne));
+        return gen;
+    };
+    /**
+     * Add a genome to the Generations
+     * @param  {[type]} genome [Genome]
+     * @return {[type]}        [False if no Generations to add to]
+     */
+    Generations.prototype.addGenome = function (genome) {
+        /* cant add to a Generation if there are no Generations */
+        if (this.generations.length == 0) {
+            return false;
+        }
+        // FIXME addGenome retuerns void.
+        return this.generations[this.generations.length - 1].addGenome(genome);
+    };
+    return Generations;
+}());
+exports.Generations = Generations;
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Genome = (function () {
+    function Genome(_score, _network) {
+        /* init parameters */
+        this.score = _score || 0;
+        this.network = _network || undefined;
+    }
+    Genome.prototype.getScore = function () { return this.score; };
+    Genome.prototype.getNetwork = function () { return this.network; };
+    return Genome;
+}());
+exports.Genome = Genome;
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Neuron_1 = __webpack_require__(18);
+var Layer = (function () {
+    function Layer(_index) {
+        /* init parameters */
+        this.id = _index || 0;
+        this.neurons = [];
+    }
+    Layer.prototype.getNeurons = function () { return this.neurons; };
+    /**
+     * Populate the Layer with a set of randomly weighted Neurons
+     * Each Neuron be initialied with nbInputs inputs with a random clamped value
+     * @param {[type]} nbNeurons [Number of neurons]
+     * @param {[type]} nbInputs  [Number of inputs]
+     */
+    Layer.prototype.populate = function (nbNeurons, nbInputs) {
+        this.neurons = [];
+        for (var i = 0; i < nbNeurons; i++) {
+            /* create new Neuron */
+            var n = new Neuron_1.Neuron();
+            /* init the Neuron */
+            n.populate(nbInputs);
+            /* push the Neuron to the layer */
+            this.neurons.push(n);
+        }
+    };
+    return Layer;
+}());
+exports.Layer = Layer;
+
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Generations_1 = __webpack_require__(14);
+var Network_1 = __webpack_require__(1);
+var Genome_1 = __webpack_require__(15);
+var Neuroevolution = (function () {
+    function Neuroevolution(_aParams) {
+        this.aParams = {};
+        /* various factors and parameters (along with default values) */
+        this.aParams.network = _aParams.network || [1, [1], 1]; // Perceptron network structure (1 hidden // layer).
+        this.aParams.population = _aParams.population || 50; // Population by generation.
+        this.aParams.elitism = _aParams.elitism || 0.2; // Best networks kepts unchanged for the next generation (rate).
+        this.aParams.randomBehaviour = _aParams.randomBehaviour || 0.2; // New random networks for the next generation (rate).
+        this.aParams.mutationRate = _aParams.mutationRate || 0.1; // Mutation rate on the weights of synapses.
+        this.aParams.mutationRange = _aParams.mutationRange || 0.5; // Interval of the mutation changes on the synapse weight.
+        this.aParams.historic = _aParams.historic || 0; // Latest generations saved.
+        this.aParams.lowHistoric = _aParams.lowHistoric || false; // Only save score (not the network).
+        this.aParams.scoreSort = _aParams.scoreSort || -1; // Sort order (-1 = desc, 1 = asc).
+        this.aParams.nbChild = _aParams.nbChild || 1; // Number of children by breeding.
+        this.generations = new Generations_1.Generations(this);
+    }
+    Neuroevolution.prototype.getAParams = function () { return this.aParams; };
+    /**
+     * Override default options.
+     * @param {NeuroevolutionConstructor} _aParams [Return new object]
+     */
+    Neuroevolution.prototype.set = function (_aParams) { this.aParams = _aParams; };
+    /**
+     * Reset and create a new Generations object.
+     */
+    Neuroevolution.prototype.restart = function () {
+        this.generations = new Generations_1.Generations(this);
+    };
+    /**
+     * Create the next generation.
+     */
+    Neuroevolution.prototype.nextGeneration = function () {
+        var networks = [];
+        if (this.generations.getGenerations().length == 0) {
+            /* if no Generations, create first */
+            networks = this.generations.firstGeneration();
+        }
+        else {
+            /* otherwise, create next one */
+            networks = this.generations.nextGeneration();
+        }
+        /* create Networks from the current Generation */
+        var nns = [];
+        for (var i in networks) {
+            var nn = new Network_1.Network();
+            nn.setSave(networks[i]);
+            nns.push(nn);
+        }
+        if (this.aParams.lowHistoric) {
+            /* remove old Networks */
+            if (this.generations.getGenerations().length >= 2) {
+                var genomes = this.generations.getGenerations()[this.generations.getGenerations().length - 2].getGenomes();
+                for (var i in genomes) {
+                    delete genomes[i];
+                }
+            }
+        }
+        if (this.aParams.historic != -1) {
+            /* Remove older generations */
+            if (this.generations.getGenerations().length > this.aParams.historic + 1) {
+                this.generations.getGenerations().splice(0, this.generations.getGenerations().length - (this.aParams.historic + 1));
+            }
+        }
+        return nns;
+    };
+    /**
+     * Adds a new Genome with specified Neural Network and score.
+     * @param {[type]} network [Neural Network]
+     * @param {[type]} score   [Score value]
+     */
+    Neuroevolution.prototype.networkScore = function (network, score) {
+        this.generations.addGenome(new Genome_1.Genome(score, network.getSave()));
+    };
+    return Neuroevolution;
+}());
+exports.Neuroevolution = Neuroevolution;
+
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Neuron = (function () {
+    function Neuron() {
+        /* init parameters */
+        this.value = 0;
+        this.weights = [];
+    }
+    Neuron.prototype.getValue = function () { return this.value; };
+    Neuron.prototype.getWeights = function () { return this.weights; };
+    Neuron.prototype.setValue = function (v) { this.value = v; };
+    /**
+     * Initialize number of neuron weights to random clamped values
+     * @param {number} nb Number of neuron weights (number of inputs).
+     */
+    Neuron.prototype.populate = function (nb) {
+        this.weights = [];
+        for (var i = 0; i < nb; i++) {
+            this.weights.push(this.randomClamped());
+        }
+    };
+    /**
+     * Returns a random value between -1 and 1
+     * @return {number} [Random Value]
+     */
+    Neuron.prototype.randomClamped = function () {
+        return Math.random() * 2 - 1;
+    };
+    return Neuron;
+}());
+exports.Neuron = Neuron;
+
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Neuroevolution_1 = __webpack_require__(17);
+exports.Neuroevolution = Neuroevolution_1.Neuroevolution;
 
 
 /***/ })
