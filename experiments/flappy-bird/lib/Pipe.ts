@@ -26,7 +26,7 @@ export class Pipe extends Phaser.Sprite {
     /* PHYSICS */
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.physics.enable(this);
-    this.body.setSize(30, 60);
+    this.body.setSize(50, 60);
     this.body.velocity.x = -200;
 
     /* automatically kill the pipe when it's no longer visible */

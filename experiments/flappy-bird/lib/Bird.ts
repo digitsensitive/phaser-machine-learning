@@ -21,6 +21,7 @@ export class Bird extends Phaser.Sprite {
 
     /* SPRITE */
     this.anchor.setTo(0, 0);
+    this.scale.setTo(1.5);
 
     /* ANIMATIONS */
     this.anim = [];
@@ -34,7 +35,7 @@ export class Bird extends Phaser.Sprite {
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.physics.enable(this);
     this.body.gravity.y = 1000;
-    this.body.setSize(30, 30);
+    this.body.setSize(25, 18);
 
 
     /* finally add the new object to the game and return it */

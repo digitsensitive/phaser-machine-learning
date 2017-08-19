@@ -13,6 +13,7 @@ const neuvol: NE.Neuroevolution = new NE.Neuroevolution({
   network: [2, [2], 1],
   population: 50
 });
+var generation: number = 0;
 
 export class GameState extends Phaser.State {
 
@@ -54,19 +55,22 @@ export class GameState extends Phaser.State {
     this.timer = undefined;
     this.hole = 0;
     this.dead = 0;
-    this.game.stage.backgroundColor = '#71c5cf';
+    this.game.stage.backgroundColor = '#56bcc8';
 
     /* ui */
     this.score = -1;
     this.scoreText = [];
     this.scoreText.push(this.game.add.text(this.game.world.centerX-14, 30, "0", {font: "40px Connection", fill: "#000"}));
     this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 30, "0", {font: "40px Connection", fill: "#fff"}));
+    this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 500, "0", {font: "40px Connection", fill: "#fff"}));
 
   }
 
   create(): void {
 
     /* create birds */
+    generation++;
+    this.scoreText[2].text = ""+generation;
     this.gen = neuvol.nextGeneration();
     for (let i in this.gen) {
     	let b = new Bird(this.game, 80, this.game.world.centerY, 'bird');
@@ -93,7 +97,7 @@ export class GameState extends Phaser.State {
 
           if (item != undefined) {
             if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
-              nextHoll = (item.getHolePosition()*60)/600;
+              nextHoll = (item.getHolePosition()*60)/this.game.world.height;
               dontGoFurthere = true;
             }
           }
@@ -101,7 +105,7 @@ export class GameState extends Phaser.State {
         }, this);
 
 
-        var inputs = [this.birds[i].getPosition().y / 600, nextHoll];
+        var inputs = [this.birds[i].getPosition().y / this.game.world.height, nextHoll];
 
         var res = this.gen[i].compute(inputs);
 
@@ -110,7 +114,7 @@ export class GameState extends Phaser.State {
         }
 
 
-        if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > 600) {
+        if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > this.game.world.height) {
             this.birds[i].alive = false;
         }
 
@@ -183,5 +187,20 @@ export class GameState extends Phaser.State {
   private restartGame(): void {
     this.game.state.restart();
   }
+
+  render(): void {
+  //   this.pipes.forEachAlive(this.renderGroup, this);
+
+  //   for (let i = 0; i < this.birds.length; i++) {
+  //        this.renderGroup(this.birds[i]);
+  //   }
+
+  }
+
+
+   renderGroup(member) {
+    // this.game.debug.body(member);
+   }
+
 
 }
