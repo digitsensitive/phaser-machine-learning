@@ -26,7 +26,7 @@ var Pipe = (function (_super) {
         /* PHYSICS */
         game.physics.startSystem(Phaser.Physics.ARCADE);
         game.physics.enable(_this);
-        _this.body.setSize(30, 30);
+        _this.body.setSize(50, 60);
         _this.body.velocity.x = -200;
         /* automatically kill the pipe when it's no longer visible */
         _this.checkWorldBounds = true;

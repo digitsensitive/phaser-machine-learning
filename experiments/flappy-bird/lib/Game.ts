@@ -60,7 +60,7 @@ export class Game extends Phaser.Game {
 // when the page has finished loading, create our game
 window.onload = () => {
 var game = new Game({
-  width: 400,
+  width: 405,
   height: 600,
   renderer: Phaser.CANVAS,
   parent: 'flappy-bird',

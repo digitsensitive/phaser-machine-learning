@@ -25,6 +25,7 @@ export class GameState extends Phaser.State {
   /* game objects */
   private birds: Bird[];
   private pipes: Phaser.Group;
+  private bg: Phaser.TileSprite;
 
   /* variables */
   private timer: Phaser.TimerEvent;
@@ -37,7 +38,8 @@ export class GameState extends Phaser.State {
 
   preload() {
     this.game.load.image("bird", "../assets/sprites/bird.png");
-    this.game.load.image("pipe", "../assets/sprites/pipe.png");
+    this.game.load.image("bg", "../assets/sprites/bg.png");
+    this.game.load.spritesheet("pipe", "../assets/sprites/pipe.png", 20, 20);
   }
 
   init() {
@@ -62,23 +64,28 @@ export class GameState extends Phaser.State {
     this.scoreText = [];
     this.scoreText.push(this.game.add.text(this.game.world.centerX-14, 30, "0", {font: "40px Connection", fill: "#000"}));
     this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 30, "0", {font: "40px Connection", fill: "#fff"}));
-    this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 500, "0", {font: "40px Connection", fill: "#fff"}));
+    this.scoreText.push(this.game.add.text(this.game.world.centerX-14, 530, "0", {font: "40px Connection", fill: "#000"}));
+    this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 530, "0", {font: "40px Connection", fill: "#fff"}));
 
   }
 
   create(): void {
 
+    /* create the game objects */
+    this.bg = this.game.add.tileSprite(0, 0, 135, 200, 'bg');
+    this.bg.scale.set(3, 3);
+    this.game.world.sendToBack(this.bg);
+
     /* create birds */
     generation++;
     this.scoreText[2].text = ""+generation;
+    this.scoreText[3].text = ""+generation;
+
     this.gen = neuvol.nextGeneration();
     for (let i in this.gen) {
     	let b = new Bird(this.game, 80, this.game.world.centerY, 'bird');
     	this.birds.push(b);
     }
-
-    /* create the game objects */
-    //this.bird = new Bird(this.game, 80, this.game.world.centerY, 'bird');
 
     /* timer for creating pipes */
     this.addRowOfPipes();
@@ -87,6 +94,8 @@ export class GameState extends Phaser.State {
   }
 
   update(): void {
+
+    this.bg.tilePosition.x -= 1;
 
     for (let i = 0; i < this.birds.length; i++) {
       if (this.birds[i].alive) {
@@ -135,10 +144,10 @@ export class GameState extends Phaser.State {
 
   }
 
-  private addOnePipe(x, y, hole): void {
+  private addOnePipe(x, y, frame, hole): void {
 
     /* create a pipe at the position x and y */
-    let pipe = new Pipe(this.game, x, y, 'pipe', hole);
+    let pipe = new Pipe(this.game, x, y, frame, 'pipe', hole);
 
     /* add pipe to group */
     this.pipes.add(pipe);
@@ -158,8 +167,18 @@ export class GameState extends Phaser.State {
     // Add the 6 pipes
     // With one big hole at position 'hole' and 'hole + 1'
     for (let i = 0; i < 10; i++) {
-      if (i != this.hole && i != (this.hole + 1)) {
-        this.addOnePipe(400, i * 60, this.hole);
+      if (i != this.hole && i != (this.hole + 1) && i != (this.hole + 2)) {
+        if (i == (this.hole-1)) {
+          this.addOnePipe(400, i * 60, 0, this.hole);
+        }
+
+        else if (i == (this.hole+3)) {
+          this.addOnePipe(400, i * 60, 1, this.hole);
+        }
+
+        else {
+          this.addOnePipe(400, i * 60, 2, this.hole);
+        }
       }
 
     }
@@ -199,7 +218,7 @@ export class GameState extends Phaser.State {
 
 
    renderGroup(member) {
-    // this.game.debug.body(member);
+  //   this.game.debug.body(member);
    }
 
 

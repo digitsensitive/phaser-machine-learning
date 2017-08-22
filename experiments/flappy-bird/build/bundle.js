@@ -288,6 +288,7 @@ var neuvol = new NE.Neuroevolution({
     network: [2, [2], 1],
     population: 50
 });
+var generation = 0;
 var GameState = (function (_super) {
     __extends(GameState, _super);
     function GameState() {
@@ -295,7 +296,8 @@ var GameState = (function (_super) {
     }
     GameState.prototype.preload = function () {
         this.game.load.image("bird", "../assets/sprites/bird.png");
-        this.game.load.image("pipe", "../assets/sprites/pipe.png");
+        this.game.load.image("bg", "../assets/sprites/bg.png");
+        this.game.load.spritesheet("pipe", "../assets/sprites/pipe.png", 20, 20);
     };
     GameState.prototype.init = function () {
         /* init neuroevolution */
@@ -309,61 +311,68 @@ var GameState = (function (_super) {
         this.timer = undefined;
         this.hole = 0;
         this.dead = 0;
-        this.game.stage.backgroundColor = '#71c5cf';
+        this.game.stage.backgroundColor = '#56bcc8';
         /* ui */
         this.score = -1;
         this.scoreText = [];
         this.scoreText.push(this.game.add.text(this.game.world.centerX - 14, 30, "0", { font: "40px Connection", fill: "#000" }));
         this.scoreText.push(this.game.add.text(this.game.world.centerX - 16, 30, "0", { font: "40px Connection", fill: "#fff" }));
+        this.scoreText.push(this.game.add.text(this.game.world.centerX - 16, 500, "0", { font: "40px Connection", fill: "#fff" }));
     };
     GameState.prototype.create = function () {
+        /* create the game objects */
+        this.bg = this.game.add.tileSprite(0, 0, 135, 200, 'bg');
+        this.bg.scale.set(3, 3);
         /* create birds */
+        generation++;
+        this.scoreText[2].text = "" + generation;
         this.gen = neuvol.nextGeneration();
         for (var i in this.gen) {
             var b = new Bird_1.Bird(this.game, 80, this.game.world.centerY, 'bird');
             this.birds.push(b);
         }
-        /* create the game objects */
-        //this.bird = new Bird(this.game, 80, this.game.world.centerY, 'bird');
         /* timer for creating pipes */
         this.addRowOfPipes();
         this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
+        this.game.world.bringToTop(this.pipes);
     };
     GameState.prototype.update = function () {
+        this.bg.tilePosition.x -= 1;
         for (var i = 0; i < this.birds.length; i++) {
-            var nextHoll;
-            var dontGoFurthere = false;
-            this.pipes.forEach(function (item) {
-                if (item != undefined) {
-                    if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
-                        nextHoll = (item.getHolePosition() * 60 + 60) / 600;
-                        dontGoFurthere = true;
+            if (this.birds[i].alive) {
+                var nextHoll;
+                var dontGoFurthere = false;
+                this.pipes.forEach(function (item) {
+                    if (item != undefined) {
+                        if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
+                            nextHoll = (item.getHolePosition() * 60) / this.game.world.height;
+                            dontGoFurthere = true;
+                        }
                     }
+                }, this);
+                var inputs = [this.birds[i].getPosition().y / this.game.world.height, nextHoll];
+                var res = this.gen[i].compute(inputs);
+                if (res > 0.5) {
+                    this.birds[i].flap();
                 }
-            }, this);
-            var inputs = [this.birds[i].getPosition().y / 600, nextHoll];
-            var res = this.gen[i].compute(inputs);
-            if (res > 0.5) {
-                this.birds[i].flap();
-            }
-            if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > 600) {
-                this.birds[i].alive = false;
-            }
-            this.game.physics.arcade.overlap(this.birds[i], this.pipes, this.hitPipe, null, this);
-            if (!this.birds[i].alive) {
-                this.birds.splice(i, 1);
-                neuvol.networkScore(this.gen[i], this.scoreNE);
-                if (this.isItEnd()) {
-                    this.restartGame();
+                if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > this.game.world.height) {
+                    this.birds[i].alive = false;
+                }
+                this.game.physics.arcade.overlap(this.birds[i], this.pipes, this.hitPipe, null, this);
+                if (!this.birds[i].alive) {
+                    neuvol.networkScore(this.gen[i], this.scoreNE);
+                    if (this.isItEnd()) {
+                        this.restartGame();
+                    }
                 }
             }
         }
         this.scoreNE++;
         this.maxScore = (this.scoreNE > this.maxScore) ? this.scoreNE : this.maxScore;
     };
-    GameState.prototype.addOnePipe = function (x, y, hole) {
+    GameState.prototype.addOnePipe = function (x, y, frame, hole) {
         /* create a pipe at the position x and y */
-        var pipe = new Pipe_1.Pipe(this.game, x, y, 'pipe', hole);
+        var pipe = new Pipe_1.Pipe(this.game, x, y, frame, 'pipe', hole);
         /* add pipe to group */
         this.pipes.add(pipe);
     };
@@ -377,36 +386,41 @@ var GameState = (function (_super) {
         // Add the 6 pipes
         // With one big hole at position 'hole' and 'hole + 1'
         for (var i = 0; i < 10; i++) {
-            if (i != this.hole && i != this.hole + 1) {
-                this.addOnePipe(400, i * 60, this.hole);
+            if (i != this.hole && i != (this.hole + 1) && i != (this.hole + 2)) {
+                if (i == (this.hole - 1)) {
+                    this.addOnePipe(400, i * 60, 0, this.hole);
+                }
+                else if (i == (this.hole + 3)) {
+                    this.addOnePipe(400, i * 60, 1, this.hole);
+                }
+                else {
+                    this.addOnePipe(400, i * 60, 2, this.hole);
+                }
             }
         }
     };
-    GameState.prototype.hitPipe = function () {
-        /* If the bird has already hit a pipe, do nothing
-           It means the bird is already falling off the screen */
-        for (var i = 0; i < this.birds.length; i++) {
-            if (this.birds[i].alive == false) {
-                return;
-            }
-            /* Set the alive property of the bird to false */
-            this.birds[i].alive = false;
-        }
-        /* Prevent new pipes from appearing */
-        //this.game.time.events.remove(this.timer);
-        /* Go through all the pipes, and stop their movement */
-        //this.pipes.forEach(function(p) {
-        //    p.body.velocity.x = 0;
-        //}, this);
+    GameState.prototype.hitPipe = function (_bird) {
+        _bird.alive = false;
     };
     GameState.prototype.isItEnd = function () {
-        if (this.birds.length == 0) {
-            return true;
+        for (var i in this.birds) {
+            if (this.birds[i].alive) {
+                return false;
+            }
         }
-        return false;
+        return true;
     };
     GameState.prototype.restartGame = function () {
         this.game.state.restart();
+    };
+    GameState.prototype.render = function () {
+        //   this.pipes.forEachAlive(this.renderGroup, this);
+        //   for (let i = 0; i < this.birds.length; i++) {
+        //        this.renderGroup(this.birds[i]);
+        //   }
+    };
+    GameState.prototype.renderGroup = function (member) {
+        //   this.game.debug.body(member);
     };
     return GameState;
 }(Phaser.State));
@@ -106360,7 +106374,8 @@ var Bird = (function (_super) {
     function Bird(game, x, y, name) {
         var _this = _super.call(this, game, x, y, name) || this;
         /* SPRITE */
-        _this.anchor.setTo(-0.2, 0.5);
+        _this.anchor.setTo(0, 0);
+        _this.scale.setTo(3);
         /* ANIMATIONS */
         _this.anim = [];
         _this.anim.push(game.add.tween(_this).to({ angle: -20 }, 100));
@@ -106371,7 +106386,7 @@ var Bird = (function (_super) {
         game.physics.startSystem(Phaser.Physics.ARCADE);
         game.physics.enable(_this);
         _this.body.gravity.y = 1000;
-        _this.body.setSize(30, 30);
+        _this.body.setSize(17, 12);
         /* finally add the new object to the game and return it */
         game.add.existing(_this);
         return _this;
@@ -106448,7 +106463,7 @@ exports.Game = Game;
 // when the page has finished loading, create our game
 window.onload = function () {
     var game = new Game({
-        width: 400,
+        width: 405,
         height: 600,
         renderer: Phaser.CANVAS,
         parent: 'flappy-bird',
@@ -106482,16 +106497,17 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Pipe = (function (_super) {
     __extends(Pipe, _super);
-    function Pipe(game, x, y, name, hole) {
-        var _this = _super.call(this, game, x, y, name) || this;
+    function Pipe(game, x, y, frame, name, hole) {
+        var _this = _super.call(this, game, x, y, name, frame) || this;
         /* VARIABLES */
         _this.holePosition = hole;
         /* SPRITE */
         _this.anchor.setTo(0, 0);
+        _this.scale.setTo(3);
         /* PHYSICS */
         game.physics.startSystem(Phaser.Physics.ARCADE);
         game.physics.enable(_this);
-        _this.body.setSize(30, 30);
+        _this.body.setSize(20, 20);
         _this.body.velocity.x = -200;
         /* automatically kill the pipe when it's no longer visible */
         _this.checkWorldBounds = true;

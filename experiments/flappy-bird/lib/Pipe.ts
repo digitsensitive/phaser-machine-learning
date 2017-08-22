@@ -14,19 +14,20 @@ export class Pipe extends Phaser.Sprite {
   public getHolePosition(): number { return this.holePosition; }
   public getPosition(): Phaser.Point { return this.position; }
 
-  constructor(game: Phaser.Game, x: number, y: number, name: string, hole: number) {
-    super(game, x, y, name);
+  constructor(game: Phaser.Game, x: number, y: number, frame: number, name: string, hole: number) {
+    super(game, x, y, name, frame);
 
     /* VARIABLES */
     this.holePosition = hole;
 
     /* SPRITE */
     this.anchor.setTo(0, 0);
+    this.scale.setTo(3);
 
     /* PHYSICS */
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.physics.enable(this);
-    this.body.setSize(50, 60);
+    this.body.setSize(20, 20);
     this.body.velocity.x = -200;
 
     /* automatically kill the pipe when it's no longer visible */

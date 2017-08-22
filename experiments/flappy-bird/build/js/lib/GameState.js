@@ -15,12 +15,14 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var NE = require("../node_modules/neuroevolution-typescript/main");
 var Bird_1 = require("./Bird");
 var Pipe_1 = require("./Pipe");
-var neuvol = new Neuroevolution({
+var neuvol = new NE.Neuroevolution({
     network: [2, [2], 1],
     population: 50
 });
+var generation = 0;
 var GameState = (function (_super) {
     __extends(GameState, _super);
     function GameState() {
@@ -42,15 +44,18 @@ var GameState = (function (_super) {
         this.timer = undefined;
         this.hole = 0;
         this.dead = 0;
-        this.game.stage.backgroundColor = '#71c5cf';
+        this.game.stage.backgroundColor = '#56bcc8';
         /* ui */
         this.score = -1;
         this.scoreText = [];
         this.scoreText.push(this.game.add.text(this.game.world.centerX - 14, 30, "0", { font: "40px Connection", fill: "#000" }));
         this.scoreText.push(this.game.add.text(this.game.world.centerX - 16, 30, "0", { font: "40px Connection", fill: "#fff" }));
+        this.scoreText.push(this.game.add.text(this.game.world.centerX - 16, 500, "0", { font: "40px Connection", fill: "#fff" }));
     };
     GameState.prototype.create = function () {
         /* create birds */
+        generation++;
+        this.scoreText[2].text = "" + generation;
         this.gen = neuvol.nextGeneration();
         for (var i in this.gen) {
             var b = new Bird_1.Bird(this.game, 80, this.game.world.centerY, 'bird');
@@ -64,30 +69,31 @@ var GameState = (function (_super) {
     };
     GameState.prototype.update = function () {
         for (var i = 0; i < this.birds.length; i++) {
-            var nextHoll;
-            var dontGoFurthere = false;
-            this.pipes.forEach(function (item) {
-                if (item != undefined) {
-                    if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
-                        nextHoll = (item.getHolePosition() * 60 + 60) / 600;
-                        dontGoFurthere = true;
+            if (this.birds[i].alive) {
+                var nextHoll;
+                var dontGoFurthere = false;
+                this.pipes.forEach(function (item) {
+                    if (item != undefined) {
+                        if (item.getPosition().x + 30 > this.birds[0].getPosition().x && dontGoFurthere == false) {
+                            nextHoll = (item.getHolePosition() * 60) / this.game.world.height;
+                            dontGoFurthere = true;
+                        }
                     }
+                }, this);
+                var inputs = [this.birds[i].getPosition().y / this.game.world.height, nextHoll];
+                var res = this.gen[i].compute(inputs);
+                if (res > 0.5) {
+                    this.birds[i].flap();
                 }
-            }, this);
-            var inputs = [this.birds[i].getPosition().y / 600, nextHoll];
-            var res = this.gen[i].compute(inputs);
-            if (res > 0.5) {
-                this.birds[i].flap();
-            }
-            if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > 600) {
-                this.birds[i].alive = false;
-            }
-            this.game.physics.arcade.overlap(this.birds[i], this.pipes, this.hitPipe, null, this);
-            if (!this.birds[i].alive) {
-                this.birds.splice(i, 1);
-                neuvol.networkScore(this.gen[i], this.scoreNE);
-                if (this.isItEnd()) {
-                    this.restartGame();
+                if (this.birds[i].getPosition().y < 0 || this.birds[i].getPosition().y > this.game.world.height) {
+                    this.birds[i].alive = false;
+                }
+                this.game.physics.arcade.overlap(this.birds[i], this.pipes, this.hitPipe, null, this);
+                if (!this.birds[i].alive) {
+                    neuvol.networkScore(this.gen[i], this.scoreNE);
+                    if (this.isItEnd()) {
+                        this.restartGame();
+                    }
                 }
             }
         }
@@ -110,36 +116,33 @@ var GameState = (function (_super) {
         // Add the 6 pipes
         // With one big hole at position 'hole' and 'hole + 1'
         for (var i = 0; i < 10; i++) {
-            if (i != this.hole && i != this.hole + 1) {
+            if (i != this.hole && i != (this.hole + 1) && i != (this.hole + 2)) {
                 this.addOnePipe(400, i * 60, this.hole);
             }
         }
     };
-    GameState.prototype.hitPipe = function () {
-        /* If the bird has already hit a pipe, do nothing
-           It means the bird is already falling off the screen */
-        for (var i = 0; i < this.birds.length; i++) {
-            if (this.birds[i].alive == false) {
-                return;
-            }
-            /* Set the alive property of the bird to false */
-            this.birds[i].alive = false;
-        }
-        /* Prevent new pipes from appearing */
-        //this.game.time.events.remove(this.timer);
-        /* Go through all the pipes, and stop their movement */
-        //this.pipes.forEach(function(p) {
-        //    p.body.velocity.x = 0;
-        //}, this);
+    GameState.prototype.hitPipe = function (_bird) {
+        _bird.alive = false;
     };
     GameState.prototype.isItEnd = function () {
-        if (this.birds.length == 0) {
-            return true;
+        for (var i in this.birds) {
+            if (this.birds[i].alive) {
+                return false;
+            }
         }
-        return false;
+        return true;
     };
     GameState.prototype.restartGame = function () {
         this.game.state.restart();
+    };
+    GameState.prototype.render = function () {
+        //   this.pipes.forEachAlive(this.renderGroup, this);
+        //   for (let i = 0; i < this.birds.length; i++) {
+        //        this.renderGroup(this.birds[i]);
+        //   }
+    };
+    GameState.prototype.renderGroup = function (member) {
+        // this.game.debug.body(member);
     };
     return GameState;
 }(Phaser.State));

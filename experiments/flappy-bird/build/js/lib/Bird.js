@@ -20,7 +20,8 @@ var Bird = (function (_super) {
     function Bird(game, x, y, name) {
         var _this = _super.call(this, game, x, y, name) || this;
         /* SPRITE */
-        _this.anchor.setTo(-0.2, 0.5);
+        _this.anchor.setTo(0, 0);
+        _this.scale.setTo(3);
         /* ANIMATIONS */
         _this.anim = [];
         _this.anim.push(game.add.tween(_this).to({ angle: -20 }, 100));
@@ -31,7 +32,7 @@ var Bird = (function (_super) {
         game.physics.startSystem(Phaser.Physics.ARCADE);
         game.physics.enable(_this);
         _this.body.gravity.y = 1000;
-        _this.body.setSize(30, 30);
+        _this.body.setSize(17, 12);
         /* finally add the new object to the game and return it */
         game.add.existing(_this);
         return _this;
