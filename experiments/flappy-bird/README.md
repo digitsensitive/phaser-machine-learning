@@ -8,7 +8,7 @@ in Typescript for the machine learning.
 
 ## Screenshot
 
-![Flappy Bird Remake Screenshot 1](/readme/flappy-bird-screen1.png)
+![Flappy Bird Remake](/readme/flappy-bird-screen1.png)
 
 ## Design
 ### Sprites
