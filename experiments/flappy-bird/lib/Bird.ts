@@ -1,7 +1,7 @@
 /**
-* @author       Eric Kuhn <digit.sensitivee@gmail.com>
-* @copyright    2017 Eric Kuhn
-* @license      Eric Kuhn
+* @author       Digitsensitive <digit.sensitivee@gmail.com>
+* @copyright    2017 Digitsensitive
+* @license      Digitsensitive
 */
 
 
@@ -48,16 +48,14 @@ export class Bird extends Phaser.Sprite {
     if (this.angle < 20)
         this.angle += 1;
 
-
-
   }
 
   private jump(): void {
 
-    if (this.alive) {
-      this.body.velocity.y = -350;
-      this.anim[0].start();
-    }
+  //  if (this.alive) {
+  //    this.body.velocity.y = -350;
+  //    this.anim[0].start();
+  //  }
 
   }
 

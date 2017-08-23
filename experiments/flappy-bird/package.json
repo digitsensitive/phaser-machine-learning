@@ -4,10 +4,10 @@
   "description": "Remake of the original Flappy Bird Game with Neuroevolution Learning. ",
   "keywords": [
     "Flappy Bird",
-    "Flappy",
-    "Bird",
-    "Neuroevolution Learning",
+    "Neuroevolution",
+    "Machine Learning",
     "Phaser",
+    "Phaser CE",
     "TypeScript"
   ],
   "bugs": {
@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "author": {
-    "name": "Eric Kuhn",
+    "name": "Digitsensitive",
     "email": "digit.sensitivee@gmail.com"
   },
   "scripts": {

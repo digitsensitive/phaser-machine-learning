@@ -1,7 +1,7 @@
 /**
-* @author       Eric Kuhn <digit.sensitivee@gmail.com>
-* @copyright    2017 Eric Kuhn
-* @license      Eric Kuhn
+* @author       Digitsensitive <digit.sensitivee@gmail.com>
+* @copyright    2017 Digitsensitive
+* @license      Digitsensitive
 */
 
 import * as NE from '../node_modules/neuroevolution-typescript/main';
@@ -64,8 +64,8 @@ export class GameState extends Phaser.State {
     this.scoreText = [];
     this.scoreText.push(this.game.add.text(this.game.world.centerX-14, 30, "0", {font: "40px Connection", fill: "#000"}));
     this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 30, "0", {font: "40px Connection", fill: "#fff"}));
-    this.scoreText.push(this.game.add.text(this.game.world.centerX-14, 530, "0", {font: "40px Connection", fill: "#000"}));
-    this.scoreText.push(this.game.add.text(this.game.world.centerX-16, 530, "0", {font: "40px Connection", fill: "#fff"}));
+    this.scoreText.push(this.game.add.text(this.game.world.centerX-80, 530, "0", {font: "28px Connection", fill: "#000"}));
+    this.scoreText.push(this.game.add.text(this.game.world.centerX-82, 530, "0", {font: "28px Connection", fill: "#fff"}));
 
   }
 
@@ -78,8 +78,8 @@ export class GameState extends Phaser.State {
 
     /* create birds */
     generation++;
-    this.scoreText[2].text = ""+generation;
-    this.scoreText[3].text = ""+generation;
+    this.scoreText[2].text = "Generation: "+generation;
+    this.scoreText[3].text = "Generation: "+generation;
 
     this.gen = neuvol.nextGeneration();
     for (let i in this.gen) {
