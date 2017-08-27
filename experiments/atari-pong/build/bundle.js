@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 10);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -97,33 +97,178 @@ module.exports = g;
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["PIXI"] = __webpack_require__(7);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["Phaser"] = __webpack_require__(6);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["p2"] = __webpack_require__(5);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
 "use strict";
 
 /**
 * @author       Eric Kuhn <digit.sensitivee@gmail.com>
 * @copyright    2017 Eric Kuhn
 * @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Layer_1 = __webpack_require__(16);
+/* Neural Network class, composed of Neuron Layers */
+var Network = (function () {
+    function Network() {
+        /* init parameters */
+        this.layers = [];
+    }
+    /**
+     * Generate the Network layers
+     * @param  {[type]} _input   [Number of Neurons in Input layer]
+     * @param  {[type]} _hiddens [Number of Neurons per Hidden layer]
+     * @param  {[type]} _output  [Number of Neurons in Output layer]
+     * @return {[type]}          [void]
+     */
+    Network.prototype.perceptronGeneration = function (_input, _hiddens, _output) {
+        var index = 0;
+        var previousNeurons = 0;
+        var l = new Layer_1.Layer(index);
+        /* Number of inputs will be set to 0 since it is an input layer */
+        l.populate(_input, previousNeurons);
+        /* number of input is size of previous layer */
+        previousNeurons = _input;
+        this.layers.push(l);
+        index++;
+        for (var i in _hiddens) {
+            /* Repeat same process as first layer for each hidden layer */
+            var l_1 = new Layer_1.Layer(index);
+            l_1.populate(_hiddens[i], previousNeurons);
+            previousNeurons = _hiddens[i];
+            this.layers.push(l_1);
+            index++;
+        }
+        var layer = new Layer_1.Layer(index);
+        /* Number of input is equal to the size of the last hidden layer */
+        layer.populate(_output, previousNeurons);
+        this.layers.push(layer);
+    };
+    /**
+     * Create a copy of the Network (neurons and weights)
+     * Returns number of neurons per layer and a flat array of all weights.
+     * @return {Object} [Network data]
+     */
+    Network.prototype.getSave = function () {
+        var datas = {
+            neurons: [],
+            weights: [] // Weights of each Neuron's inputs.
+        };
+        for (var i in this.layers) {
+            datas.neurons.push(this.layers[i].getNeurons().length);
+            for (var j in this.layers[i].getNeurons()) {
+                for (var k in this.layers[i].getNeurons()[j].getWeights()) {
+                    /* push all input weights of each Neuron of each Layer into a flat array */
+                    datas.weights.push(this.layers[i].getNeurons()[j].getWeights()[k]);
+                }
+            }
+        }
+        return datas;
+    };
+    /**
+     * Apply network data (neurons and weights)
+     * @param {[type]} _save [Copy of network data (neurons and weights)]
+     */
+    Network.prototype.setSave = function (_save) {
+        var previousNeurons = 0;
+        var index = 0;
+        var indexWeights = 0;
+        this.layers = [];
+        for (var i in _save.neurons) {
+            // Create and populate layers
+            var layer = new Layer_1.Layer(index);
+            layer.populate(_save.neurons[i], previousNeurons);
+            for (var j in layer.getNeurons()) {
+                for (var k in layer.getNeurons()[j].getWeights()) {
+                    /* Apply neurons weights to each Neuron */
+                    layer.getNeurons()[j].getWeights()[k] = _save.weights[indexWeights];
+                    /* increment index of flat array */
+                    indexWeights++;
+                }
+            }
+            previousNeurons = _save.neurons[i];
+            index++;
+            this.layers.push(layer);
+        }
+    };
+    /**
+     * Compute the output of an input
+     * @param  {[type]} _inputs [Set of inputs]
+     * @return {Object}         [Network output]
+     */
+    Network.prototype.compute = function (_inputs) {
+        /* Set the value of each Neuron in the input layer */
+        for (var i in _inputs) {
+            if (this.layers[0] && this.layers[0].getNeurons()[i]) {
+                this.layers[0].getNeurons()[i].value = _inputs[i];
+            }
+        }
+        /* Previous layer is input layer */
+        var prevLayer = this.layers[0];
+        for (var i = 1; i < this.layers.length; i++) {
+            for (var j in this.layers[i].getNeurons()) {
+                /* For each Neuron in each layer */
+                var sum = 0;
+                for (var k in prevLayer.getNeurons()) {
+                    /* Every Neuron in the previous layer is an input to each Neuron in the next layer */
+                    sum += prevLayer.getNeurons()[k].getValue() * this.layers[i].getNeurons()[j].getWeights()[k];
+                }
+                /* compute the activation of the Neuron */
+                this.layers[i].getNeurons()[j].setValue(this.activation(sum));
+            }
+            prevLayer = this.layers[i];
+        }
+        /* all outputs of the Network */
+        var out = [];
+        var lastLayer = this.layers[this.layers.length - 1];
+        for (var i in lastLayer.getNeurons()) {
+            out.push(lastLayer.getNeurons()[i].getValue());
+        }
+        return out;
+    };
+    /**
+     * Logistic activation function
+     * @param  {number} a  [Input Value]
+     * @return {number}    [Return Value]
+     */
+    Network.prototype.activation = function (a) {
+        var ap = (-a) / 1;
+        return (1 / (1 + Math.exp(ap)));
+    };
+    return Network;
+}());
+exports.Network = Network;
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["PIXI"] = __webpack_require__(8);
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["Phaser"] = __webpack_require__(7);
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {module.exports = global["p2"] = __webpack_require__(6);
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Digitsensitive <digit.sensitivee@gmail.com>
+* @copyright    2017 Digitsensitive
+* @license      Digitsensitive
 */
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -136,8 +281,14 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var Player_1 = __webpack_require__(11);
-var Ball_1 = __webpack_require__(9);
+var NE = __webpack_require__(19);
+var Player_1 = __webpack_require__(12);
+var Ball_1 = __webpack_require__(10);
+var neuvol = new NE.Neuroevolution({
+    network: [2, [2], 1],
+    population: 50
+});
+var generation = 0;
 var GameState = (function (_super) {
     __extends(GameState, _super);
     function GameState() {
@@ -145,104 +296,128 @@ var GameState = (function (_super) {
         /* ui */
         _this.scores = [];
         _this.scoreTexts = [];
+        /* variables */
         _this.p1 = 9;
-        _this.p2 = 10;
+        _this.p2 = 4;
         return _this;
     }
     GameState.prototype.init = function () {
+        /* init neuroevolution */
+        this.gen = [];
         /* init game objects */
-        this.paddleOne = undefined;
-        this.paddleTwo = undefined;
+        this.paddlesLeft = [];
+        this.aiPaddle = undefined;
         this.ball = undefined;
         /* ui */
         this.scores = [0, 0];
         this.scoreTexts = [];
         this.scoreTexts.push(this.game.add.text(200, 30, "" + this.scores[0], { font: "64px Connection", fill: "#fff" }));
         this.scoreTexts.push(this.game.add.text(560, 30, "" + this.scores[1], { font: "64px Connection", fill: "#fff" }));
+        this.scoreTexts.push(this.game.add.text(this.game.world.centerX - 80, 530, "0", { font: "28px Connection", fill: "#000" }));
+        this.scoreTexts.push(this.game.add.text(this.game.world.centerX - 82, 530, "0", { font: "28px Connection", fill: "#fff" }));
         /* create and init our center line */
         this.centerLine = this.game.add.graphics(0, 0);
         /* set the characteristics of the line */
-        this.centerLine.lineStyle(4, 0xffffff, 0.6);
-        this.centerLine.moveTo(this.world.centerX, 0); //moving position of graphic if you draw mulitple lines
-        this.centerLine.lineTo(this.world.centerX, this.world.height);
-        this.centerLine.endFill();
+        this.centerLine.lineStyle(4, 0xFFFFFF, 1);
+        for (var y = 0; y < this.game.world.height; y += 8 * 2) {
+            this.centerLine.moveTo(this.game.world.centerX, y);
+            this.centerLine.lineTo(this.game.world.centerX, y + 8);
+        }
     };
     GameState.prototype.create = function () {
+        /* create texts */
+        this.scoreTexts[2].text = "Generation: " + generation;
+        this.scoreTexts[3].text = "Generation: " + generation;
         /* create the game objects */
-        this.paddleOne = new Player_1.Player(this.game, 160, this.game.world.centerY, 1);
-        this.paddleTwo = new Player_1.Player(this.game, this.game.world.centerX + (400 - 160), this.game.world.centerY, 3);
-        this.ball = new Ball_1.Ball(this.game, this.game.world.centerX, this.game.world.centerY, 4, -4);
+        this.gen = neuvol.nextGeneration();
+        for (var i in this.gen) {
+            var p = new Player_1.Player(this.game, 160, this.game.world.centerY, 4);
+            this.paddlesLeft.push(p);
+        }
+        this.aiPaddle = new Player_1.Player(this.game, this.game.world.centerX + (400 - 160), this.game.world.centerY, 3);
+        this.ball = new Ball_1.Ball(this.game, this.game.world.centerX, this.game.world.centerY, 4, -2);
     };
     GameState.prototype.update = function () {
-        /* if the ball hits the left wall */
-        if (this.ball.getPos().x < 0) {
-            this.updateScoreAndReset(1);
+        /* neuroevolution integration paddles left */
+        for (var i = 0; i < this.paddlesLeft.length; i++) {
+            if (this.paddlesLeft[i].alive) {
+                var inputs = [this.paddlesLeft[i].getPos().y / this.game.world.height, this.ball.getPos().y / this.game.world.height];
+                var res = this.gen[i].compute(inputs);
+                if (res > 0.5) {
+                    this.paddlesLeft[i].goUp();
+                }
+                else {
+                    this.paddlesLeft[i].goDown();
+                }
+                this.aiMovePaddle();
+                /* collision check */
+                this.game.physics.arcade.collide(this.paddlesLeft[i], this.ball, this.collisionPaddleBall, null, this);
+                this.game.physics.arcade.collide(this.aiPaddle, this.ball, this.collisionAIPaddleBall, null, this);
+                /* if the ball hits the left or right wall */
+                if (this.ball.getPos().x < 0 || this.ball.getPos().x > this.game.width - 8) {
+                    this.restartGame();
+                }
+                /* check if ball is coming from the left */
+                /* reset boolean, if so */
+                if (this.ball.getVel().x > 0) {
+                    if (!this.paddlesLeft[i].getHit()) {
+                        this.paddlesLeft[i].alive = false;
+                    }
+                }
+                else {
+                    this.paddlesLeft[i].setHit(false);
+                }
+                if (!this.paddlesLeft[i].alive) {
+                    neuvol.networkScore(this.gen[i], this.paddlesLeft[i].getScore());
+                    if (this.isItEnd()) {
+                        this.restartGame();
+                    }
+                }
+            }
         }
-        /* if the ball hits the right wall */
-        if (this.ball.getPos().x > this.game.width - 8) {
-            this.updateScoreAndReset(0);
-        }
-        /* collision check */
-        this.game.physics.arcade.overlap(this.paddleOne, this.ball, this.paddleBallCollision, null, this);
-        this.game.physics.arcade.overlap(this.paddleTwo, this.ball, this.paddleBallCollision, null, this);
-        this.aiMovePaddle();
     };
     GameState.prototype.render = function () {
         /* render game objects */
-        this.paddleOne.render();
-        this.paddleTwo.render();
+        for (var i = 0; i < this.paddlesLeft.length; i++) {
+            this.paddlesLeft[i].render();
+        }
+        this.aiPaddle.render();
         this.ball.render();
     };
-    GameState.prototype.paddleBallCollision = function (_paddle, _ball) {
+    GameState.prototype.aiMovePaddle = function () {
+        if (this.aiPaddle.getTypePlayer() == 3) {
+            if (this.aiPaddle.getPos().y > this.ball.getPos().y + this.p2) {
+                this.aiPaddle.setMoveUp(true);
+            }
+            else if (this.aiPaddle.getPos().y < this.ball.getPos().y - this.p2) {
+                this.aiPaddle.setMoveDown(true);
+            }
+            else {
+                this.aiPaddle.setMoveUp(false);
+                this.aiPaddle.setMoveDown(false);
+            }
+        }
+    };
+    GameState.prototype.collisionPaddleBall = function (_paddle, _ball) {
+        /* inverse the x-velocity */
+        _ball.setVelX(-_ball.getVel().x);
+        _paddle.setScore();
+        _paddle.setHit(true);
+    };
+    GameState.prototype.collisionAIPaddleBall = function (_paddle, _ball) {
         /* inverse the x-velocity */
         _ball.setVelX(-_ball.getVel().x);
     };
-    GameState.prototype.updateScoreAndReset = function (_player) {
-        /* get the x and y position of the font */
-        var x;
-        var y;
-        if (_player == 0) {
-            x = 200;
-            y = 30;
+    GameState.prototype.isItEnd = function () {
+        for (var i in this.paddlesLeft) {
+            if (this.paddlesLeft[i].alive) {
+                return false;
+            }
         }
-        else if (_player == 1) {
-            x = 560;
-            y = 30;
-        }
-        /* update the score and redraw */
-        this.scores[_player]++;
-        this.scoreTexts[_player].destroy();
-        this.scoreTexts[_player] = this.game.add.text(x, y, "" + this.scores[_player], { font: "64px Connection", fill: "#fff" });
-        /* reset ball position */
-        this.ball.restart(_player);
+        return true;
     };
-    GameState.prototype.aiMovePaddle = function () {
-        /* if paddle one simple computer ai */
-        if (this.paddleOne.getTypePlayer() == 3) {
-            if (this.paddleOne.getPos().y > this.ball.getPos().y + this.p1) {
-                this.paddleOne.setMoveUp(true);
-            }
-            else if (this.paddleOne.getPos().y < this.ball.getPos().y - this.p1) {
-                this.paddleOne.setMoveDown(true);
-            }
-            else {
-                this.paddleOne.setMoveUp(false);
-                this.paddleOne.setMoveDown(false);
-            }
-        }
-        /* if paddle two simple computer ai */
-        if (this.paddleTwo.getTypePlayer() == 3) {
-            if (this.paddleTwo.getPos().y > this.ball.getPos().y + this.p2) {
-                this.paddleTwo.setMoveUp(true);
-            }
-            else if (this.paddleTwo.getPos().y < this.ball.getPos().y - this.p2) {
-                this.paddleTwo.setMoveDown(true);
-            }
-            else {
-                this.paddleTwo.setMoveUp(false);
-                this.paddleTwo.setMoveDown(false);
-            }
-        }
+    GameState.prototype.restartGame = function () {
+        this.game.state.restart();
     };
     return GameState;
 }(Phaser.State));
@@ -250,7 +425,7 @@ exports.GameState = GameState;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var require;var require;/**
@@ -13893,7 +14068,7 @@ World.prototype.raycast = function(result, ray){
 });
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -98401,10 +98576,10 @@ PIXI.canUseNewCanvasBlendModes = function () {
 * "What matters in this life is not what we do but what we do for others, the legacy we leave and the imprint we make." - Eric Meyer
 */
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -105980,7 +106155,7 @@ PIXI.TextureUvs = function()
 }).call(this);
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -106170,15 +106345,15 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 /**
-* @author       Eric Kuhn <digit.sensitivee@gmail.com>
-* @copyright    2017 Eric Kuhn
-* @license      Eric Kuhn
+* @author       Digitsensitive <digit.sensitivee@gmail.com>
+* @copyright    2017 Digitsensitive
+* @license      Digitsensitive
 */
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -106197,10 +106372,15 @@ var Ball = (function (_super) {
         var _this = _super.call(this, game, x, y) || this;
         /* VARIABLES */
         _this.bodyRectangle = new Phaser.Rectangle(x, y, 8, 8);
+        _this.checkWorldBounds = true;
         /* PHYSICS */
-        game.physics.enable(_this, Phaser.Physics.ARCADE);
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.enable(_this);
         _this.body.setSize(8, 8);
         _this.body.velocity.setTo(vx, vy);
+        _this.body.collideWorldBounds = true;
+        _this.body.immovable = true;
+        _this.body.bounce.set(1);
         /* finally add the new object to the game and return it */
         game.add.existing(_this);
         return _this;
@@ -106214,9 +106394,9 @@ var Ball = (function (_super) {
         this.position.x += this.body.velocity.x;
         this.position.y += this.body.velocity.y;
         /* if the ball hits the upper or lower wall */
-        if (this.position.y < 0 || this.position.y > this.game.height - this.body.height) {
-            this.body.velocity.y = -this.body.velocity.y;
-        }
+        //if (this.position.y < 0 + this.body.height || this.position.y > this.game.height - this.body.height) {
+        //  this.body.velocity.y = -this.body.velocity.y;
+        //}
         /* update the body rectangle position */
         this.bodyRectangle = new Phaser.Rectangle(this.body.position.x, this.body.position.y, 8, 8);
     };
@@ -106246,15 +106426,15 @@ exports.Ball = Ball;
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 /**
-* @author       Eric Kuhn <digit.sensitivee@gmail.com>
-* @copyright    2017 Eric Kuhn
-* @license      Eric Kuhn
+* @author       Digitsensitive <digit.sensitivee@gmail.com>
+* @copyright    2017 Digitsensitive
+* @license      Digitsensitive
 */
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -106268,10 +106448,10 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 /// <reference path="../node_modules/phaser-ce/typescript/phaser.d.ts"/>
-__webpack_require__(1);
-__webpack_require__(3);
 __webpack_require__(2);
-var GameState_1 = __webpack_require__(4);
+__webpack_require__(4);
+__webpack_require__(3);
+var GameState_1 = __webpack_require__(5);
 var Game = (function (_super) {
     __extends(Game, _super);
     function Game(aParams) {
@@ -106305,15 +106485,15 @@ window.onload = function () {
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 /**
-* @author       Eric Kuhn <digit.sensitivee@gmail.com>
-* @copyright    2017 Eric Kuhn
-* @license      Eric Kuhn
+* @author       Digitsensitive <digit.sensitivee@gmail.com>
+* @copyright    2017 Digitsensitive
+* @license      Digitsensitive
 */
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
@@ -106335,7 +106515,10 @@ var Player = (function (_super) {
         _this.typePlayer = type;
         _this.computerMoveUp = false;
         _this.computerMoveDown = false;
+        _this.score = 0;
+        _this.hit = true;
         /* INPUT */
+        /* Player One */
         if (_this.typePlayer == 1) {
             _this.moveUpKey = game.input.keyboard.addKey(Phaser.Keyboard.UP);
             _this.moveDownKey = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
@@ -106344,18 +106527,26 @@ var Player = (function (_super) {
             _this.moveUpKey = game.input.keyboard.addKey(Phaser.Keyboard.Q);
             _this.moveDownKey = game.input.keyboard.addKey(Phaser.Keyboard.A);
         }
+        else if (_this.typePlayer == 3) { }
+        else if (_this.typePlayer == 4) { }
         /* PHYSICS */
-        game.physics.enable(_this, Phaser.Physics.ARCADE);
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.enable(_this);
         _this.body.setSize(8, 30);
         /* finally add the new object to the game and return it */
         game.add.existing(_this);
         return _this;
     }
+    /* GETTER AND SETTER */
     Player.prototype.getTypePlayer = function () { return this.typePlayer; };
     Player.prototype.getPos = function () { return this.position; };
     Player.prototype.setPos = function (_pos) { this.position = _pos; };
     Player.prototype.setMoveUp = function (_mu) { this.computerMoveUp = _mu; };
     Player.prototype.setMoveDown = function (_md) { this.computerMoveDown = _md; };
+    Player.prototype.getScore = function () { return this.score; };
+    Player.prototype.setScore = function () { this.score += 1; };
+    Player.prototype.getHit = function () { return this.hit; };
+    Player.prototype.setHit = function (_h) { this.hit = _h; };
     /*
      * UPDATE() IS CALLED DURING THE CORE GAME LOOP
      * AFTER debug, physics, plugins and the Stage have had their preUpdate methods called.
@@ -106420,9 +106611,446 @@ var Player = (function (_super) {
         /* render the rectangle */
         this.game.debug.geom(this.bodyRectangle, '#ffffff');
     };
+    Player.prototype.goUp = function () {
+        if (this.position.y > 30) {
+            this.body.velocity.y -= 60;
+        }
+        else {
+            this.body.velocity.y = 0;
+            if (this.position.y < 0) {
+                this.position.y = 0;
+            }
+            if (this.position.y > (488 - this.body.height)) {
+                this.position.y = 488 - this.body.height;
+            }
+        }
+    };
+    Player.prototype.goDown = function () {
+        if (this.position.y < 440) {
+            this.body.velocity.y += 60;
+        }
+        else {
+            this.body.velocity.y = 0;
+            if (this.position.y < 0) {
+                this.position.y = 0;
+            }
+            if (this.position.y > (488 - this.body.height)) {
+                this.position.y = 488 - this.body.height;
+            }
+        }
+    };
     return Player;
 }(Phaser.Sprite));
 exports.Player = Player;
+
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+/* Generation class, composed of a set of Genomes */
+var Generation = (function () {
+    function Generation(_ne) {
+        /* init parameters */
+        this.genomes = [];
+        this.ne = _ne;
+    }
+    Generation.prototype.getGenomes = function () { return this.genomes; };
+    /**
+     * Add a genome to the generation.
+     * @param {[type]} _genome [Genome to add]
+     */
+    Generation.prototype.addGenome = function (_genome) {
+        /* locate position to insert Genome into, the gnomes should remain sorted */
+        for (var i = 0; i < this.genomes.length; i++) {
+            /* sort in descending order */
+            if (this.ne.getAParams().scoreSort < 0) {
+                if (_genome.score > this.genomes[i].getScore()) {
+                    break;
+                }
+            }
+            else {
+                if (_genome.score < this.genomes[i].getScore()) {
+                    break;
+                }
+            }
+        }
+        /* insert genome into correct position */
+        this.genomes.splice(i, 0, _genome);
+    };
+    /**
+     * Breed to genomes to produce offspring(s)
+     * @param  {[type]} g1       [Genome 1]
+     * @param  {[type]} g2       [Genome 2]
+     * @param  {[type]} nbChilds [Number of offspring (children)]
+     * @return {Object}          [Object]
+     */
+    Generation.prototype.breed = function (g1, g2, nbChilds) {
+        var datas = [];
+        for (var nb = 0; nb < nbChilds; nb++) {
+            /* Deep clone of genome 1 */
+            var data = JSON.parse(JSON.stringify(g1));
+            for (var i in g2.network.weights) {
+                /* Genetic crossover
+                         * 0.5 is the crossover factor.
+                         * FIXME Really should be a predefined constant */
+                if (Math.random() <= 0.5) {
+                    data.network.weights[i] = g2.network.weights[i];
+                }
+            }
+            /* perform mutation on some weights */
+            for (var i in data.network.weights) {
+                if (Math.random() <= this.ne.getAParams().mutationRate) {
+                    data.network.weights[i] += Math.random() * this.ne.getAParams().mutationRate * 2 - this.ne.getAParams().mutationRate;
+                }
+            }
+            datas.push(data);
+        }
+        return datas;
+    };
+    /**
+     * Generate the next generation
+     */
+    Generation.prototype.generateNextGeneration = function () {
+        var nexts = [];
+        for (var i = 0; i < Math.round(this.ne.getAParams().elitism * this.ne.getAParams().population); i++) {
+            if (nexts.length < this.ne.getAParams().population) {
+                /* push a deep copy of ith Genome's Nethwork */
+                nexts.push(JSON.parse(JSON.stringify(this.genomes[i].getNetwork())));
+            }
+        }
+        for (var i = 0; i < Math.round(this.ne.getAParams().randomBehaviour * this.ne.getAParams().population); i++) {
+            var n = JSON.parse(JSON.stringify(this.genomes[0].getNetwork()));
+            for (var k in n.weights) {
+                n.weights[k] = this.randomClamped();
+            }
+            if (nexts.length < this.ne.getAParams().population) {
+                nexts.push(n);
+            }
+        }
+        var max = 0;
+        while (true) {
+            for (var i = 0; i < max; i++) {
+                /* create the children and push them to the nexts array */
+                var childs = this.breed(this.genomes[i], this.genomes[max], (this.ne.getAParams().nbChild > 0 ? this.ne.getAParams().nbChild : 1));
+                for (var c in childs) {
+                    nexts.push(childs[c].network);
+                    if (nexts.length >= this.ne.getAParams().population) {
+                        /* Return once number of children is equal to the
+                         * population by generatino value */
+                        return nexts;
+                    }
+                }
+            }
+            max++;
+            if (max >= this.genomes.length - 1) {
+                max = 0;
+            }
+        }
+    };
+    /**
+     * Returns a random value between -1 and 1
+     * @return {number} [Random Value]
+     */
+    Generation.prototype.randomClamped = function () {
+        return Math.random() * 2 - 1;
+    };
+    return Generation;
+}());
+exports.Generation = Generation;
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Generation_1 = __webpack_require__(13);
+var Network_1 = __webpack_require__(1);
+var Generations = (function () {
+    function Generations(_ne) {
+        /* init parameters */
+        this.generations = [];
+        this.currentGeneration = new Generation_1.Generation(_ne);
+        this.ne = _ne;
+    }
+    Generations.prototype.getGenerations = function () { return this.generations; };
+    /**
+     * Create the first generation
+     * @param  {[type]} _input   [Input layer]
+     * @param  {[type]} _hiddens [Hidden layer(s)]
+     * @param  {[type]} _output  [Output layer]
+     * @return {[type]}          [First Generation]
+     */
+    Generations.prototype.firstGeneration = function (_input, _hiddens, _output) {
+        /* FIXME input, hiddens, output unused */
+        var out = [];
+        for (var i = 0; i < this.ne.getAParams().population; i++) {
+            /* generate the Network and save it */
+            var nn = new Network_1.Network();
+            nn.perceptronGeneration(this.ne.getAParams().network[0], this.ne.getAParams().network[1], this.ne.getAParams().network[2]);
+            out.push(nn.getSave());
+        }
+        this.generations.push(new Generation_1.Generation(this.ne));
+        return out;
+    };
+    /**
+     * Create the next Generation.
+     */
+    Generations.prototype.nextGeneration = function () {
+        if (this.generations.length == 0) {
+            /* need to create first generation */
+            return [];
+        }
+        var gen = this.generations[this.generations.length - 1].generateNextGeneration();
+        this.generations.push(new Generation_1.Generation(this.ne));
+        return gen;
+    };
+    /**
+     * Add a genome to the Generations
+     * @param  {[type]} genome [Genome]
+     * @return {[type]}        [False if no Generations to add to]
+     */
+    Generations.prototype.addGenome = function (genome) {
+        /* cant add to a Generation if there are no Generations */
+        if (this.generations.length == 0) {
+            return false;
+        }
+        // FIXME addGenome retuerns void.
+        return this.generations[this.generations.length - 1].addGenome(genome);
+    };
+    return Generations;
+}());
+exports.Generations = Generations;
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Genome = (function () {
+    function Genome(_score, _network) {
+        /* init parameters */
+        this.score = _score || 0;
+        this.network = _network || undefined;
+    }
+    Genome.prototype.getScore = function () { return this.score; };
+    Genome.prototype.getNetwork = function () { return this.network; };
+    return Genome;
+}());
+exports.Genome = Genome;
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Neuron_1 = __webpack_require__(18);
+var Layer = (function () {
+    function Layer(_index) {
+        /* init parameters */
+        this.id = _index || 0;
+        this.neurons = [];
+    }
+    Layer.prototype.getNeurons = function () { return this.neurons; };
+    /**
+     * Populate the Layer with a set of randomly weighted Neurons
+     * Each Neuron be initialied with nbInputs inputs with a random clamped value
+     * @param {[type]} nbNeurons [Number of neurons]
+     * @param {[type]} nbInputs  [Number of inputs]
+     */
+    Layer.prototype.populate = function (nbNeurons, nbInputs) {
+        this.neurons = [];
+        for (var i = 0; i < nbNeurons; i++) {
+            /* create new Neuron */
+            var n = new Neuron_1.Neuron();
+            /* init the Neuron */
+            n.populate(nbInputs);
+            /* push the Neuron to the layer */
+            this.neurons.push(n);
+        }
+    };
+    return Layer;
+}());
+exports.Layer = Layer;
+
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Generations_1 = __webpack_require__(14);
+var Network_1 = __webpack_require__(1);
+var Genome_1 = __webpack_require__(15);
+var Neuroevolution = (function () {
+    function Neuroevolution(_aParams) {
+        this.aParams = {};
+        /* various factors and parameters (along with default values) */
+        this.aParams.network = _aParams.network || [1, [1], 1]; // Perceptron network structure (1 hidden // layer).
+        this.aParams.population = _aParams.population || 50; // Population by generation.
+        this.aParams.elitism = _aParams.elitism || 0.2; // Best networks kepts unchanged for the next generation (rate).
+        this.aParams.randomBehaviour = _aParams.randomBehaviour || 0.2; // New random networks for the next generation (rate).
+        this.aParams.mutationRate = _aParams.mutationRate || 0.1; // Mutation rate on the weights of synapses.
+        this.aParams.mutationRange = _aParams.mutationRange || 0.5; // Interval of the mutation changes on the synapse weight.
+        this.aParams.historic = _aParams.historic || 0; // Latest generations saved.
+        this.aParams.lowHistoric = _aParams.lowHistoric || false; // Only save score (not the network).
+        this.aParams.scoreSort = _aParams.scoreSort || -1; // Sort order (-1 = desc, 1 = asc).
+        this.aParams.nbChild = _aParams.nbChild || 1; // Number of children by breeding.
+        this.generations = new Generations_1.Generations(this);
+    }
+    Neuroevolution.prototype.getAParams = function () { return this.aParams; };
+    /**
+     * Override default options.
+     * @param {NeuroevolutionConstructor} _aParams [Return new object]
+     */
+    Neuroevolution.prototype.set = function (_aParams) { this.aParams = _aParams; };
+    /**
+     * Reset and create a new Generations object.
+     */
+    Neuroevolution.prototype.restart = function () {
+        this.generations = new Generations_1.Generations(this);
+    };
+    /**
+     * Create the next generation.
+     */
+    Neuroevolution.prototype.nextGeneration = function () {
+        var networks = [];
+        if (this.generations.getGenerations().length == 0) {
+            /* if no Generations, create first */
+            networks = this.generations.firstGeneration();
+        }
+        else {
+            /* otherwise, create next one */
+            networks = this.generations.nextGeneration();
+        }
+        /* create Networks from the current Generation */
+        var nns = [];
+        for (var i in networks) {
+            var nn = new Network_1.Network();
+            nn.setSave(networks[i]);
+            nns.push(nn);
+        }
+        if (this.aParams.lowHistoric) {
+            /* remove old Networks */
+            if (this.generations.getGenerations().length >= 2) {
+                var genomes = this.generations.getGenerations()[this.generations.getGenerations().length - 2].getGenomes();
+                for (var i in genomes) {
+                    delete genomes[i];
+                }
+            }
+        }
+        if (this.aParams.historic != -1) {
+            /* Remove older generations */
+            if (this.generations.getGenerations().length > this.aParams.historic + 1) {
+                this.generations.getGenerations().splice(0, this.generations.getGenerations().length - (this.aParams.historic + 1));
+            }
+        }
+        return nns;
+    };
+    /**
+     * Adds a new Genome with specified Neural Network and score.
+     * @param {[type]} network [Neural Network]
+     * @param {[type]} score   [Score value]
+     */
+    Neuroevolution.prototype.networkScore = function (network, score) {
+        this.generations.addGenome(new Genome_1.Genome(score, network.getSave()));
+    };
+    return Neuroevolution;
+}());
+exports.Neuroevolution = Neuroevolution;
+
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+* @author       Eric Kuhn <digit.sensitivee@gmail.com>
+* @copyright    2017 Eric Kuhn
+* @license      Eric Kuhn
+*/
+Object.defineProperty(exports, "__esModule", { value: true });
+var Neuron = (function () {
+    function Neuron() {
+        /* init parameters */
+        this.value = 0;
+        this.weights = [];
+    }
+    Neuron.prototype.getValue = function () { return this.value; };
+    Neuron.prototype.getWeights = function () { return this.weights; };
+    Neuron.prototype.setValue = function (v) { this.value = v; };
+    /**
+     * Initialize number of neuron weights to random clamped values
+     * @param {number} nb Number of neuron weights (number of inputs).
+     */
+    Neuron.prototype.populate = function (nb) {
+        this.weights = [];
+        for (var i = 0; i < nb; i++) {
+            this.weights.push(this.randomClamped());
+        }
+    };
+    /**
+     * Returns a random value between -1 and 1
+     * @return {number} [Random Value]
+     */
+    Neuron.prototype.randomClamped = function () {
+        return Math.random() * 2 - 1;
+    };
+    return Neuron;
+}());
+exports.Neuron = Neuron;
+
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Neuroevolution_1 = __webpack_require__(17);
+exports.Neuroevolution = Neuroevolution_1.Neuroevolution;
 
 
 /***/ })

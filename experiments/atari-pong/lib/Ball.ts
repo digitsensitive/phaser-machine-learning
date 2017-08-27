@@ -21,10 +21,16 @@ export class Ball extends Phaser.Sprite {
     /* VARIABLES */
     this.bodyRectangle = new Phaser.Rectangle(x, y, 8, 8);
 
+
     /* PHYSICS */
-    game.physics.enable(this, Phaser.Physics.ARCADE);
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+    game.physics.enable(this);
     this.body.setSize(8, 8);
     this.body.velocity.setTo(vx, vy);
+
+    this.body.collideWorldBounds = true;
+    this.body.immovable = true;
+    this.body.bounce.set(1);
 
     /* finally add the new object to the game and return it */
     game.add.existing(this);
@@ -38,9 +44,9 @@ export class Ball extends Phaser.Sprite {
     this.position.y += this.body.velocity.y;
 
     /* if the ball hits the upper or lower wall */
-    if (this.position.y < 0 || this.position.y > this.game.height - this.body.height) {
-      this.body.velocity.y = -this.body.velocity.y;
-    }
+    //if (this.position.y < 0 + this.body.height || this.position.y > this.game.height - this.body.height) {
+    //  this.body.velocity.y = -this.body.velocity.y;
+    //}
 
     /* update the body rectangle position */
     this.bodyRectangle = new Phaser.Rectangle(this.body.position.x, this.body.position.y, 8, 8);

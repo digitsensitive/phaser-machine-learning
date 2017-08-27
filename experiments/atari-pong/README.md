@@ -31,6 +31,7 @@ in Typescript for the machine learning.
 ## Versions
 
 ### 0.0.2 (27.08.2017)
+- dashed line
 - integrate machine learning algorithm
 
 ### 0.0.1 (12.08.2017)

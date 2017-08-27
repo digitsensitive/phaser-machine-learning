@@ -4,16 +4,27 @@
 * @license      Digitsensitive
 */
 
+import * as NE from '../node_modules/neuroevolution-typescript/main';
 
 import { Player } from './Player'
 import { Ball } from './Ball'
 
 
+const neuvol: NE.Neuroevolution = new NE.Neuroevolution({
+  network: [4, [2], 1],
+  population: 50
+});
+
+var generation: number = 0;
+
 export class GameState extends Phaser.State {
 
+  /* neuroevolution */
+  private gen: any[];
+
   /* game objects */
-  private paddleOne: Player;
-  private paddleTwo: Player;
+  private paddlesLeft: Player[];
+  private aiPaddle: Player;
   private ball: Ball;
 
   /* environment */
@@ -23,14 +34,18 @@ export class GameState extends Phaser.State {
   private scores: number[] = [];
   private scoreTexts: Phaser.Text[] = [];
 
+  /* variables */
   private p1: number = 9;
-  private p2: number = 10;
+  private p2: number = 4;
 
   init() {
 
+    /* init neuroevolution */
+    this.gen = [];
+
     /* init game objects */
-    this.paddleOne = undefined;
-    this.paddleTwo = undefined;
+    this.paddlesLeft = [];
+    this.aiPaddle = undefined;
     this.ball = undefined;
 
     /* ui */
@@ -38,117 +53,166 @@ export class GameState extends Phaser.State {
     this.scoreTexts = [];
     this.scoreTexts.push(this.game.add.text(200, 30, ""+this.scores[0], {font: "64px Connection", fill: "#fff"}));
     this.scoreTexts.push(this.game.add.text(560, 30, ""+this.scores[1], {font: "64px Connection", fill: "#fff"}));
+    this.scoreTexts.push(this.game.add.text(550, 450, "0", {font: "28px Connection", fill: "#000"}));
+    this.scoreTexts.push(this.game.add.text(550, 450, "0", {font: "28px Connection", fill: "#fff"}));
 
     /* create and init our center line */
     this.centerLine = this.game.add.graphics(0,0);
 
     /* set the characteristics of the line */
-    this.centerLine.lineStyle(4, 0xffffff, 0.6);
-    this.centerLine.moveTo(this.world.centerX, 0);//moving position of graphic if you draw mulitple lines
-    this.centerLine.lineTo(this.world.centerX, this.world.height);
-    this.centerLine.endFill();
+    this.centerLine.lineStyle(4, 0xFFFFFF, 1);
+    for (var y = 0; y < this.game.world.height; y += 8 * 2) {
+        this.centerLine.moveTo(this.game.world.centerX, y);
+        this.centerLine.lineTo(this.game.world.centerX, y + 8);
+    }
 
   }
 
   create(): void {
 
+    /* create texts */
+    generation++;
+    this.scoreTexts[2].text = "Generation: "+generation;
+    this.scoreTexts[3].text = "Generation: "+generation;
+
     /* create the game objects */
-    this.paddleOne = new Player(this.game, 160, this.game.world.centerY, 1);
-    this.paddleTwo = new Player(this.game, this.game.world.centerX + (400-160), this.game.world.centerY, 3);
-    this.ball = new Ball(this.game, this.game.world.centerX, this.game.world.centerY, 4, -4);
+    this.gen = neuvol.nextGeneration();
+    for (let i in this.gen) {
+    	let p = new Player(this.game, 160, this.game.world.centerY, 4);
+    	this.paddlesLeft.push(p);
+    }
+
+    this.aiPaddle = new Player(this.game, this.game.world.centerX + (400-160), this.game.world.centerY, 3);
+    this.ball = new Ball(this.game, this.game.world.centerX, this.game.world.centerY, 4, -2);
 
   }
 
   update(): void {
 
-    /* if the ball hits the left wall */
-    if (this.ball.getPos().x < 0) {
-      this.updateScoreAndReset(1);
+    /* neuroevolution integration paddles left */
+    for (let i = 0; i < this.paddlesLeft.length; i++) {
+      if (this.paddlesLeft[i].alive) {
+
+        var inputs = [
+          this.paddlesLeft[i].getPos().y / this.game.world.height,
+          this.ball.getPos().y / this.game.world.height,
+          this.ball.getPos().x - this.paddlesLeft[i].getPos().x,
+          this.ball.getPos().y - this.paddlesLeft[i].getPos().y];
+
+        var res = this.gen[i].compute(inputs);
+
+        if (res > 0.5) {
+          this.paddlesLeft[i].goUp();
+        }
+
+        else {
+          this.paddlesLeft[i].goDown();
+        }
+
+
+        this.aiMovePaddle();
+
+        /* collision check */
+        this.game.physics.arcade.collide(this.paddlesLeft[i], this.ball, this.collisionPaddleBall, null, this);
+        this.game.physics.arcade.collide(this.aiPaddle, this.ball, this.collisionAIPaddleBall, null, this);
+
+        /* check if ball is coming from the left */
+        /* reset boolean, if so */
+        if (this.ball.getVel().x > 0) {
+          if (!this.paddlesLeft[i].getHit()) {
+            this.paddlesLeft[i].alive = false;
+          }
+        }
+
+        else {
+          this.paddlesLeft[i].setHit(false);
+        }
+
+        if (!this.paddlesLeft[i].alive) {
+          neuvol.networkScore(this.gen[i], this.paddlesLeft[i].getScore());
+
+          if (this.isItEnd()) {
+            this.restartGame();
+          }
+        }
+      }
     }
 
-    /* if the ball hits the right wall */
-    if (this.ball.getPos().x > this.game.width - 8) {
-      this.updateScoreAndReset(0);
+    /* if the ball hits the left or right wall */
+    if (this.ball.getPos().x < 0 || this.ball.getPos().x > this.game.width - 8) {
+      this.restartGame();
     }
-
-    /* collision check */
-    this.game.physics.arcade.overlap(this.paddleOne, this.ball, this.paddleBallCollision, null, this);
-    this.game.physics.arcade.overlap(this.paddleTwo, this.ball, this.paddleBallCollision, null, this);
-
-    this.aiMovePaddle();
 
   }
 
   render() {
 
     /* render game objects */
-    this.paddleOne.render();
-    this.paddleTwo.render();
+    for (let i = 0; i < this.paddlesLeft.length; i++) {
+      if (this.paddlesLeft[i].alive) {
+        this.paddlesLeft[i].render();
+      }
+    }
+
+    this.aiPaddle.render();
     this.ball.render();
 
   }
 
-  private paddleBallCollision(_paddle, _ball): void {
+  private aiMovePaddle(): void {
+
+  if (this.aiPaddle.getTypePlayer() == 3) {
+    if (this.aiPaddle.getPos().y > this.ball.getPos().y+this.p2) {
+      this.aiPaddle.setMoveUp(true);
+    }
+
+    else if (this.aiPaddle.getPos().y < this.ball.getPos().y-this.p2) {
+      this.aiPaddle.setMoveDown(true);
+    }
+
+    else {
+      this.aiPaddle.setMoveUp(false);
+      this.aiPaddle.setMoveDown(false);
+    }
+  }
+
+}
+
+  private collisionPaddleBall(_paddle, _ball): void {
+
+    /* inverse the x-velocity */
+    if (_ball.getVel().x < 0) {
+      _ball.setVelX(-_ball.getVel().x);
+      _paddle.setScore();
+      _paddle.setHit(true);
+    }
+
+  }
+
+  private collisionAIPaddleBall(_paddle, _ball): void {
 
     /* inverse the x-velocity */
     _ball.setVelX(-_ball.getVel().x);
 
   }
 
-  private updateScoreAndReset(_player: number): void {
 
-    /* get the x and y position of the font */
-    let x;
-    let y;
+  private isItEnd(): boolean {
 
-    if (_player == 0) { x = 200; y = 30;}
-    else if (_player == 1) { x = 560; y = 30;}
+    for (let i in this.paddlesLeft) {
 
-    /* update the score and redraw */
-    this.scores[_player]++;
-    this.scoreTexts[_player].destroy();
-    this.scoreTexts[_player] = this.game.add.text(x, y, ""+this.scores[_player], {font: "64px Connection", fill: "#fff"});
+        if(this.paddlesLeft[i].alive){
+          return false;
+        }
 
-    /* reset ball position */
-    this.ball.restart(_player);
+    }
+
+    return true;
 
   }
 
-  private aiMovePaddle(): void {
-
-    /* if paddle one simple computer ai */
-    if (this.paddleOne.getTypePlayer() == 3) {
-      if (this.paddleOne.getPos().y > this.ball.getPos().y+this.p1) {
-        this.paddleOne.setMoveUp(true);
-
-      }
-
-      else if (this.paddleOne.getPos().y < this.ball.getPos().y-this.p1) {
-        this.paddleOne.setMoveDown(true);
-      }
-
-      else {
-        this.paddleOne.setMoveUp(false);
-        this.paddleOne.setMoveDown(false);
-      }
-    }
-
-    /* if paddle two simple computer ai */
-    if (this.paddleTwo.getTypePlayer() == 3) {
-      if (this.paddleTwo.getPos().y > this.ball.getPos().y+this.p2) {
-        this.paddleTwo.setMoveUp(true);
-      }
-
-      else if (this.paddleTwo.getPos().y < this.ball.getPos().y-this.p2) {
-        this.paddleTwo.setMoveDown(true);
-      }
-
-      else {
-        this.paddleTwo.setMoveUp(false);
-        this.paddleTwo.setMoveDown(false);
-      }
-    }
-
+  private restartGame(): void {
+    this.game.state.restart();
   }
 
 }
