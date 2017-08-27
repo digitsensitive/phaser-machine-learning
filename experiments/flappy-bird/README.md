@@ -8,7 +8,7 @@ in Typescript for the machine learning.
 
 ## Screenshot
 
-![Flappy Bird Remake](/experiments/flappy-bird/readme/flappy-bird-screen1.png)
+![Flappy Bird Remake](/experiments/flappy-bird/assets/github/flappy-bird-screen1.png)
 
 ## Design
 ### Sprites
@@ -24,9 +24,9 @@ in Typescript for the machine learning.
 - Currently no Sound
 
 ### Input
-- No input. Controlled by Reinforcement Library.
+- No input -> Controlled by Reinforcement Library
 
 ## Versions
 
-### 0.0.1
+### 0.0.1 (23.08.2017)
 - First commit

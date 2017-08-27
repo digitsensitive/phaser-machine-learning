@@ -31,5 +31,9 @@
   "dependencies": {
     "phaser-ce": "^2.8.3",
     "neuroevolution-typescript": "0.0.15"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digitsensitive/phaser-machine-learning.git"
   }
 }
