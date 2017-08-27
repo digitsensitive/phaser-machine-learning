@@ -157,8 +157,8 @@ var GameState = (function (_super) {
         /* ui */
         this.scores = [0, 0];
         this.scoreTexts = [];
-        this.scoreTexts.push(this.game.add.text(200, 30, "" + this.scores[0], { font: "28px Finger Paint", fill: "#fff" }));
-        this.scoreTexts.push(this.game.add.text(580, 30, "" + this.scores[1], { font: "28px Finger Paint", fill: "#fff" }));
+        this.scoreTexts.push(this.game.add.text(200, 30, "" + this.scores[0], { font: "64px Connection", fill: "#fff" }));
+        this.scoreTexts.push(this.game.add.text(560, 30, "" + this.scores[1], { font: "64px Connection", fill: "#fff" }));
         /* create and init our center line */
         this.centerLine = this.game.add.graphics(0, 0);
         /* set the characteristics of the line */
@@ -170,7 +170,7 @@ var GameState = (function (_super) {
     GameState.prototype.create = function () {
         /* create the game objects */
         this.paddleOne = new Player_1.Player(this.game, 160, this.game.world.centerY, 1);
-        this.paddleTwo = new Player_1.Player(this.game, 620, this.game.world.centerY, 3);
+        this.paddleTwo = new Player_1.Player(this.game, this.game.world.centerX + (400 - 160), this.game.world.centerY, 3);
         this.ball = new Ball_1.Ball(this.game, this.game.world.centerX, this.game.world.centerY, 4, -4);
     };
     GameState.prototype.update = function () {
@@ -206,13 +206,13 @@ var GameState = (function (_super) {
             y = 30;
         }
         else if (_player == 1) {
-            x = 580;
+            x = 560;
             y = 30;
         }
         /* update the score and redraw */
         this.scores[_player]++;
         this.scoreTexts[_player].destroy();
-        this.scoreTexts[_player] = this.game.add.text(x, y, "" + this.scores[_player], { font: "28px Finger Paint", fill: "#fff" });
+        this.scoreTexts[_player] = this.game.add.text(x, y, "" + this.scores[_player], { font: "64px Connection", fill: "#fff" });
         /* reset ball position */
         this.ball.restart(_player);
     };
@@ -106329,7 +106329,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Player = (function (_super) {
     __extends(Player, _super);
     function Player(game, x, y, type) {
-        var _this = _super.call(this, game, x, y) || this;
+        var _this = _super.call(this, game, x - 4, y) || this;
         /* VARIABLES */
         _this.bodyRectangle = new Phaser.Rectangle(x, y, 8, 30);
         _this.typePlayer = type;

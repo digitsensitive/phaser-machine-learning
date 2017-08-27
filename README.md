@@ -3,6 +3,7 @@ Experiments with Phaser and Machine Learning.
 As boilerplate of the experiments I have used this [repository](https://github.com/digitsensitive/phaser-ts-webpack-boilerplate).
 
 ![Flappy Bird Remake](/experiments/flappy-bird/assets/github/flappy-bird-screen1-small.png)
+![Atari Remake](/experiments/atari-pong/assets/github/atari-pong-screen1-small.png)
 
 ## How to use
 To start an experiment do the following simple steps in the accordingly folder using your console:

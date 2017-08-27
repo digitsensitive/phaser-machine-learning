@@ -1,6 +1,6 @@
 {
   "name": "atari-pong",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Remake of the original Atari Pong Game with Reinforcement Learning. ",
   "keywords": [
     "Atari",
@@ -14,7 +14,7 @@
   },
   "license": "MIT",
   "author": {
-    "name": "Eric Kuhn",
+    "name": "Digitsensitive",
     "email": "digit.sensitivee@gmail.com"
   },
   "scripts": {
@@ -28,6 +28,12 @@
     "webpack-dev-server": "^2.4.5"
   },
   "dependencies": {
-    "phaser-ce": "^2.8.3"
+    "phaser-ce": "^2.8.3",
+    "neuroevolution-typescript": "0.0.15"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digitsensitive/phaser-machine-learning.git"
+  }
   }
 }
